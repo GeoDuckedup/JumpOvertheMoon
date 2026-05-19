@@ -1,3 +1,4 @@
+import asyncio
 import math
 import random
 import sys
@@ -52,6 +53,45 @@ BALLOON_COLORS = [
     (88, 177, 235),
     (190, 112, 230),
 ]
+BALLOON_SPRITE_NAMES = ("red", "yellow", "green", "blue", "purple")
+BALLOON_SPRITE_BASE_RADIUS = 43.0
+BALLOON_SPRITE_CENTER_Y = 48.0
+GOAL_BOUNCE_SPEED = 1080.0
+GOAL_POP_TIME = 0.5
+GOAL_BALLOON_CLEARANCE_TOP = 95
+GOAL_BALLOON_CLEARANCE_BOTTOM = 80
+GOAL_MARKER_DATA = [
+    {
+        "name": "Space Station",
+        "asset_name": "station",
+        "height": 190,
+        "x": WIDTH * 0.5,
+        "sprite_offset_y": 84,
+        "hit_width": 280,
+        "hit_height": 130,
+        "hit_offset_y": 0,
+    },
+    {
+        "name": "Moon",
+        "asset_name": "moon",
+        "height": 430,
+        "x": WIDTH * 0.5,
+        "sprite_offset_y": 28,
+        "hit_width": 230,
+        "hit_height": 155,
+        "hit_offset_y": 70,
+    },
+    {
+        "name": "Mars",
+        "asset_name": "mars",
+        "height": 700,
+        "x": WIDTH * 0.5,
+        "sprite_offset_y": 30,
+        "hit_width": 230,
+        "hit_height": 155,
+        "hit_offset_y": 70,
+    },
+]
 
 
 @dataclass
@@ -74,6 +114,25 @@ class Pop:
     y: float
     color: tuple[int, int, int]
     age: float = 0.0
+
+
+@dataclass
+class GoalMarker:
+    name: str
+    asset_name: str
+    height: int
+    x: float
+    y: float
+    sprite_offset_y: float
+    hit_width: float
+    hit_height: float
+    hit_offset_y: float
+    reached: bool = False
+    popped_timer: float = 0.0
+
+    @property
+    def alive(self):
+        return self.popped_timer <= 0
 
 
 class Player:
@@ -156,6 +215,22 @@ class Player:
             and balloon.y > self.y + 4
         )
 
+    def sword_hit_rect(self, rect):
+        if not self.slashing:
+            return False
+
+        if rect.centery <= self.y:
+            return False
+
+        start, end = self.sword_segment()
+        line = (
+            round(start[0]),
+            round(start[1]),
+            round(end[0]),
+            round(end[1]),
+        )
+        return bool(rect.clipline(line))
+
     def update(self, dt, keys, speed_multiplier):
         direction = 0
         if keys[pygame.K_LEFT]:
@@ -210,13 +285,15 @@ class Player:
 class Game:
     def __init__(self):
         pygame.init()
-        pygame.display.set_caption("Cat Sword Climb")
+        pygame.display.set_caption("Cow Sword Climb")
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("arial", 22, bold=True)
         self.big_font = pygame.font.SysFont("arial", 52, bold=True)
         self.small_font = pygame.font.SysFont("arial", 16, bold=True)
         self.cat_sprites = self.load_cat_sprites()
+        self.balloon_sprites = self.load_balloon_sprites()
+        self.goal_marker_sprites = self.load_goal_marker_sprites()
         self.running = True
         self.reset()
 
@@ -225,6 +302,25 @@ class Game:
         try:
             for name in ("idle", "jump", "slash", "fall"):
                 sprites[name] = pygame.image.load(ASSET_DIR / f"cat_{name}.png").convert_alpha()
+        except (FileNotFoundError, pygame.error):
+            return None
+        return sprites
+
+    def load_balloon_sprites(self):
+        sprites = {}
+        try:
+            for color, name in zip(BALLOON_COLORS, BALLOON_SPRITE_NAMES):
+                sprites[color] = pygame.image.load(ASSET_DIR / f"balloon_{name}.png").convert_alpha()
+        except (FileNotFoundError, pygame.error):
+            return None
+        return sprites
+
+    def load_goal_marker_sprites(self):
+        sprites = {}
+        try:
+            for marker in GOAL_MARKER_DATA:
+                name = marker["asset_name"]
+                sprites[name] = pygame.image.load(ASSET_DIR / f"goal_{name}.png").convert_alpha()
         except (FileNotFoundError, pygame.error):
             return None
         return sprites
@@ -240,10 +336,27 @@ class Game:
         self.pops = []
         self.clouds = self.make_clouds()
         self.stars = self.make_stars()
+        self.goal_markers = self.make_goal_markers()
         self.balloons = []
         self.next_balloon_y = WORLD_FLOOR_Y - 150
         while self.next_balloon_y > -1800:
             self.spawn_balloon()
+
+    def make_goal_markers(self):
+        return [
+            GoalMarker(
+                name=marker["name"],
+                asset_name=marker["asset_name"],
+                height=marker["height"],
+                x=marker["x"],
+                y=WORLD_FLOOR_Y - marker["height"] * 10,
+                sprite_offset_y=marker["sprite_offset_y"],
+                hit_width=marker["hit_width"],
+                hit_height=marker["hit_height"],
+                hit_offset_y=marker["hit_offset_y"],
+            )
+            for marker in GOAL_MARKER_DATA
+        ]
 
     def make_clouds(self):
         random.seed(8)
@@ -283,14 +396,31 @@ class Game:
             int(a[2] * (1 - t) + b[2] * t),
         )
 
+    def goal_marker_balloon_clearance_band(self, marker):
+        sprite = self.goal_marker_sprites.get(marker.asset_name) if self.goal_marker_sprites else None
+        sprite_height = sprite.get_height() if sprite else marker.hit_height
+        top = marker.y - marker.sprite_offset_y - GOAL_BALLOON_CLEARANCE_TOP
+        bottom = marker.y - marker.sprite_offset_y + sprite_height + GOAL_BALLOON_CLEARANCE_BOTTOM
+        return top, bottom
+
+    def balloon_y_is_near_goal_marker(self, y):
+        return any(
+            top <= y <= bottom
+            for marker in self.goal_markers
+            for top, bottom in [self.goal_marker_balloon_clearance_band(marker)]
+        )
+
     def spawn_balloon(self):
+        y = self.next_balloon_y
+        self.next_balloon_y -= random.randrange(BALLOON_SPACING_MIN, BALLOON_SPACING_MAX)
+        if self.balloon_y_is_near_goal_marker(y):
+            return
+
         radius = random.randrange(23, 34)
         margin = radius + 32
         x = random.randrange(margin, WIDTH - margin)
-        y = self.next_balloon_y
         color = random.choice(BALLOON_COLORS)
         self.balloons.append(Balloon(x, y, radius, color, random.random() * math.tau))
-        self.next_balloon_y -= random.randrange(BALLOON_SPACING_MIN, BALLOON_SPACING_MAX)
 
     def ensure_balloons(self):
         target_top = self.camera_y - 1200
@@ -347,9 +477,22 @@ class Game:
                 self.player.bounce(speed_multiplier=self.speed_multiplier)
                 self.hit_pause_timer = HIT_PAUSE_TIME
 
+        for marker in self.goal_markers:
+            if marker.alive and self.player.sword_hit_rect(self.goal_marker_hit_rect(marker)):
+                marker.popped_timer = 0.001
+                marker.reached = True
+                self.has_popped_balloon = True
+                self.pops.append(Pop(marker.x, marker.y + marker.hit_offset_y, (245, 245, 226)))
+                self.player.bounce(speed_multiplier=self.speed_multiplier, speed=GOAL_BOUNCE_SPEED)
+                self.hit_pause_timer = HIT_PAUSE_TIME
+
         for balloon in self.balloons:
             if balloon.popped_timer > 0:
                 balloon.popped_timer += dt
+
+        for marker in self.goal_markers:
+            if marker.popped_timer > 0:
+                marker.popped_timer += dt
 
         for pop in self.pops:
             pop.age += dt
@@ -367,11 +510,23 @@ class Game:
 
         self.ensure_balloons()
 
-        if self.has_popped_balloon and self.player.on_ground:
+        if self.has_popped_balloon and self.player.on_ground and self.player_on_world_floor():
             self.game_over = True
 
     def world_to_screen(self, x, y):
         return int(x), int(y - self.camera_y)
+
+    def player_on_world_floor(self):
+        floor_player_y = WORLD_FLOOR_Y - CAT_H * 0.5
+        return self.player.y >= floor_player_y - 0.5
+
+    def goal_marker_hit_rect(self, marker):
+        return pygame.Rect(
+            round(marker.x - marker.hit_width * 0.5),
+            round(marker.y + marker.hit_offset_y - marker.hit_height * 0.5),
+            round(marker.hit_width),
+            round(marker.hit_height),
+        )
 
     def draw_gradient(self):
         atmosphere = self.atmosphere_amount()
@@ -427,6 +582,60 @@ class Game:
             pygame.draw.rect(self.screen, (78, 95, 83), (0, y, WIDTH, HEIGHT - y))
             pygame.draw.rect(self.screen, (48, 59, 55), (0, y, WIDTH, 10))
 
+    def draw_goal_marker_label(self, marker, x, y):
+        if marker.alive:
+            text = f"{marker.name}  {marker.height}m"
+            color = (232, 239, 234)
+        else:
+            text = f"{marker.name} cleared"
+            color = (255, 219, 116)
+        shadow = self.small_font.render(text, True, (11, 13, 18))
+        label = self.small_font.render(text, True, color)
+        rect = label.get_rect(center=(x, y))
+        self.screen.blit(shadow, rect.move(1, 2))
+        self.screen.blit(label, rect)
+
+    def draw_goal_marker_burst(self, marker):
+        if marker.popped_timer <= 0 or marker.popped_timer >= GOAL_POP_TIME:
+            return
+
+        sx, sy = self.world_to_screen(marker.x, marker.y + marker.hit_offset_y)
+        t = marker.popped_timer / GOAL_POP_TIME
+        for i in range(14):
+            angle = i * math.tau / 14 + t * 0.8
+            distance = 28 + t * 125
+            end = (
+                sx + int(math.cos(angle) * distance),
+                sy + int(math.sin(angle) * distance),
+            )
+            color = (245, 245, 226) if i % 2 else (255, 219, 116)
+            pygame.draw.line(self.screen, color, (sx, sy), end, max(1, int(5 * (1 - t))))
+        self.draw_goal_marker_label(marker, sx, sy - 96 * t)
+
+    def draw_goal_markers(self):
+        for marker in self.goal_markers:
+            if not marker.alive:
+                self.draw_goal_marker_burst(marker)
+                continue
+
+            sx, sy = self.world_to_screen(marker.x, marker.y)
+            sprite = self.goal_marker_sprites.get(marker.asset_name) if self.goal_marker_sprites else None
+            if sprite:
+                top = sy - round(marker.sprite_offset_y)
+                left = sx - sprite.get_width() // 2
+                if top > HEIGHT + 80 or top + sprite.get_height() < -80:
+                    continue
+                self.screen.blit(sprite, (left, top))
+                self.draw_goal_marker_label(marker, sx, top - 16)
+            else:
+                hit_rect = self.goal_marker_hit_rect(marker)
+                x, y = self.world_to_screen(hit_rect.centerx, hit_rect.centery)
+                fallback_rect = pygame.Rect(0, 0, hit_rect.width, hit_rect.height)
+                fallback_rect.center = (x, y)
+                pygame.draw.rect(self.screen, (180, 187, 184), fallback_rect, border_radius=9)
+                pygame.draw.rect(self.screen, INK, fallback_rect, 2, border_radius=9)
+                self.draw_goal_marker_label(marker, x, fallback_rect.top - 22)
+
     def draw_balloon(self, balloon):
         sx, sy = self.world_to_screen(
             balloon.x + math.sin(balloon.wobble) * 4,
@@ -436,24 +645,40 @@ class Game:
             return
 
         if balloon.alive:
-            pygame.draw.line(self.screen, (67, 77, 82), (sx, sy + balloon.radius), (sx, sy + balloon.radius + 24), 2)
-            pygame.draw.circle(self.screen, balloon.color, (sx, sy), int(balloon.radius))
-            pygame.draw.circle(self.screen, INK, (sx, sy), int(balloon.radius), 3)
-            pygame.draw.circle(
-                self.screen,
-                (255, 255, 255),
-                (sx - int(balloon.radius * 0.35), sy - int(balloon.radius * 0.35)),
-                max(4, int(balloon.radius * 0.18)),
-            )
-            pygame.draw.polygon(
-                self.screen,
-                (60, 55, 58),
-                [
-                    (sx - 5, sy + balloon.radius - 1),
-                    (sx + 5, sy + balloon.radius - 1),
-                    (sx, sy + balloon.radius + 8),
-                ],
-            )
+            if self.balloon_sprites:
+                sprite = self.balloon_sprites[balloon.color]
+                scale = balloon.radius / BALLOON_SPRITE_BASE_RADIUS
+                target_size = (
+                    max(1, int(sprite.get_width() * scale)),
+                    max(1, int(sprite.get_height() * scale)),
+                )
+                image = pygame.transform.smoothscale(sprite, target_size)
+                self.screen.blit(
+                    image,
+                    (
+                        sx - target_size[0] // 2,
+                        sy - round(BALLOON_SPRITE_CENTER_Y * scale),
+                    ),
+                )
+            else:
+                pygame.draw.line(self.screen, (67, 77, 82), (sx, sy + balloon.radius), (sx, sy + balloon.radius + 24), 2)
+                pygame.draw.circle(self.screen, balloon.color, (sx, sy), int(balloon.radius))
+                pygame.draw.circle(self.screen, INK, (sx, sy), int(balloon.radius), 3)
+                pygame.draw.circle(
+                    self.screen,
+                    (255, 255, 255),
+                    (sx - int(balloon.radius * 0.35), sy - int(balloon.radius * 0.35)),
+                    max(4, int(balloon.radius * 0.18)),
+                )
+                pygame.draw.polygon(
+                    self.screen,
+                    (60, 55, 58),
+                    [
+                        (sx - 5, sy + balloon.radius - 1),
+                        (sx + 5, sy + balloon.radius - 1),
+                        (sx, sy + balloon.radius + 8),
+                    ],
+                )
         else:
             burst = min(1.0, balloon.popped_timer / 0.25)
             radius = balloon.radius + int(26 * burst)
@@ -479,11 +704,11 @@ class Game:
     def current_player_sprite_name(self):
         if self.player.slashing:
             return "slash"
+        if self.player.on_ground:
+            return "idle"
         if self.player.vy < -120:
             return "jump"
-        if self.player.vy > 170:
-            return "fall"
-        return "idle"
+        return "fall"
 
     def draw_player_sprite(self):
         p = self.player
@@ -491,7 +716,7 @@ class Game:
         sprite = self.cat_sprites[name]
         target_heights = {
             "idle": 104,
-            "jump": 118,
+            "jump": 142,
             "slash": 124,
             "fall": 112,
         }
@@ -584,6 +809,7 @@ class Game:
         self.draw_stars()
         self.draw_clouds()
         self.draw_floor()
+        self.draw_goal_markers()
         for balloon in self.balloons:
             self.draw_balloon(balloon)
         self.draw_pop_particles()
@@ -591,23 +817,32 @@ class Game:
         self.draw_hud()
         pygame.display.flip()
 
+    def run_frame(self):
+        dt = min(1 / 30, self.clock.tick(FPS) / 1000)
+        self.handle_events()
+        self.update(dt)
+        self.draw()
+
+    async def run_async(self):
+        try:
+            while self.running:
+                self.run_frame()
+                await asyncio.sleep(0)
+        finally:
+            pygame.quit()
+
     def run(self):
-        while self.running:
-            dt = min(1 / 30, self.clock.tick(FPS) / 1000)
-            self.handle_events()
-            self.update(dt)
-            self.draw()
-
-        pygame.quit()
+        asyncio.run(self.run_async())
 
 
-def main():
+async def main():
+    game = Game()
     try:
-        Game().run()
+        await game.run_async()
     except KeyboardInterrupt:
         pygame.quit()
         sys.exit(0)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
