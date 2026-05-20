@@ -27,12 +27,26 @@ SLASH_DIVE_SPEED = 560.0
 HIT_PAUSE_TIME = 0.055
 GROUND_JUMP_SPEED = 860.0
 BOUNCE_SPEED = 920.0
-SPEED_RAMP_HEIGHT = 2600.0
+COMBO_STREAK_TARGET = 3
+COMBO_BOUNCE_HEIGHT_MULTIPLIER = 1.5
+COMBO_BOUNCE_SPEED = BOUNCE_SPEED * math.sqrt(COMBO_BOUNCE_HEIGHT_MULTIPLIER)
+COMBO_FEEDBACK_TIME = 0.75
+SPEED_RAMP_HEIGHT = 5200.0
 MAX_SPEED_MULTIPLIER = 1.7
 
 WORLD_FLOOR_Y = 660.0
 BALLOON_SPACING_MIN = 115
 BALLOON_SPACING_MAX = 180
+BALLOON_MAX_HORIZONTAL_DRIFT = 150
+OPTIONAL_SIDE_BALLOON_CHANCE = 0.35
+OPTIONAL_SIDE_BALLOON_MIN_X_OFFSET = 130
+OPTIONAL_SIDE_BALLOON_MAX_X_OFFSET = 245
+OPTIONAL_SIDE_BALLOON_Y_JITTER = 46
+COLOR_COMBO_FIRST_GAP_MIN = 5
+COLOR_COMBO_FIRST_GAP_MAX = 9
+COLOR_COMBO_REPEAT_GAP_MIN = 11
+COLOR_COMBO_REPEAT_GAP_MAX = 18
+COLOR_REPEAT_CHANCE = 0.35
 
 SKY_TOP = (42, 54, 86)
 SKY_BOTTOM = (123, 177, 204)
@@ -60,11 +74,23 @@ GOAL_BOUNCE_SPEED = 1080.0
 GOAL_POP_TIME = 0.5
 GOAL_BALLOON_CLEARANCE_TOP = 95
 GOAL_BALLOON_CLEARANCE_BOTTOM = 80
+GOAL_APPROACH_BALLOON_GAP = 42
+GOAL_APPROACH_X_JITTER = 58
 GOAL_MARKER_DATA = [
+    {
+        "name": "Prop Plane",
+        "asset_name": "airplane",
+        "height": 380,
+        "x": WIDTH * 0.5,
+        "sprite_offset_y": 80,
+        "hit_width": 270,
+        "hit_height": 95,
+        "hit_offset_y": 18,
+    },
     {
         "name": "Space Station",
         "asset_name": "station",
-        "height": 190,
+        "height": 700,
         "x": WIDTH * 0.5,
         "sprite_offset_y": 84,
         "hit_width": 280,
@@ -74,7 +100,7 @@ GOAL_MARKER_DATA = [
     {
         "name": "Moon",
         "asset_name": "moon",
-        "height": 430,
+        "height": 1060,
         "x": WIDTH * 0.5,
         "sprite_offset_y": 28,
         "hit_width": 230,
@@ -84,12 +110,52 @@ GOAL_MARKER_DATA = [
     {
         "name": "Mars",
         "asset_name": "mars",
-        "height": 700,
+        "height": 1460,
         "x": WIDTH * 0.5,
         "sprite_offset_y": 30,
         "hit_width": 230,
         "hit_height": 155,
         "hit_offset_y": 70,
+    },
+    {
+        "name": "Jupiter",
+        "asset_name": "jupiter",
+        "height": 1890,
+        "x": WIDTH * 0.5,
+        "sprite_offset_y": 25,
+        "hit_width": 240,
+        "hit_height": 175,
+        "hit_offset_y": 88,
+    },
+    {
+        "name": "Saturn",
+        "asset_name": "saturn",
+        "height": 2340,
+        "x": WIDTH * 0.5,
+        "sprite_offset_y": 35,
+        "hit_width": 315,
+        "hit_height": 125,
+        "hit_offset_y": 78,
+    },
+    {
+        "name": "Uranus",
+        "asset_name": "uranus",
+        "height": 2820,
+        "x": WIDTH * 0.5,
+        "sprite_offset_y": 28,
+        "hit_width": 205,
+        "hit_height": 155,
+        "hit_offset_y": 75,
+    },
+    {
+        "name": "Neptune",
+        "asset_name": "neptune",
+        "height": 3330,
+        "x": WIDTH * 0.5,
+        "sprite_offset_y": 28,
+        "hit_width": 205,
+        "hit_height": 155,
+        "hit_offset_y": 75,
     },
 ]
 
@@ -101,6 +167,7 @@ class Balloon:
     radius: float
     color: tuple[int, int, int]
     wobble: float
+    route_role: str = "main"
     popped_timer: float = 0.0
 
     @property
@@ -110,6 +177,15 @@ class Balloon:
 
 @dataclass
 class Pop:
+    x: float
+    y: float
+    color: tuple[int, int, int]
+    boosted: bool = False
+    age: float = 0.0
+
+
+@dataclass
+class ComboFeedback:
     x: float
     y: float
     color: tuple[int, int, int]
@@ -294,6 +370,7 @@ class Game:
         self.cat_sprites = self.load_cat_sprites()
         self.balloon_sprites = self.load_balloon_sprites()
         self.goal_marker_sprites = self.load_goal_marker_sprites()
+        self.run_seed_rng = random.Random()
         self.running = True
         self.reset()
 
@@ -330,14 +407,30 @@ class Game:
         self.camera_y = 0.0
         self.best_height = 0
         self.speed_multiplier = 1.0
+        self.speed_ramp_enabled = True
         self.hit_pause_timer = 0.0
         self.game_over = False
         self.has_popped_balloon = False
+        self.hit_combo_color = None
+        self.hit_combo_streak = 0
+        self.combo_feedbacks = []
         self.pops = []
         self.clouds = self.make_clouds()
         self.stars = self.make_stars()
         self.goal_markers = self.make_goal_markers()
         self.balloons = []
+        self.goal_approach_marker_names = set()
+        self.balloon_rng = random.Random(self.run_seed_rng.randrange(1 << 63))
+        self.last_balloon_x = WIDTH * 0.5
+        self.last_balloon_color = None
+        self.balloon_color_streak = 0
+        self.pending_combo_steps = []
+        self.current_side_color_override = None
+        self.force_current_side_balloon = False
+        self.balloons_until_combo_pattern = self.balloon_rng.randrange(
+            COLOR_COMBO_FIRST_GAP_MIN,
+            COLOR_COMBO_FIRST_GAP_MAX + 1,
+        )
         self.next_balloon_y = WORLD_FLOOR_Y - 150
         while self.next_balloon_y > -1800:
             self.spawn_balloon()
@@ -359,25 +452,25 @@ class Game:
         ]
 
     def make_clouds(self):
-        random.seed(8)
+        rng = random.Random(8)
         return [
             (
-                random.randrange(20, WIDTH - 20),
-                random.randrange(-3600, HEIGHT),
-                random.randrange(34, 78),
-                random.random() * 2.0,
+                rng.randrange(20, WIDTH - 20),
+                rng.randrange(-3600, HEIGHT),
+                rng.randrange(34, 78),
+                rng.random() * 2.0,
             )
             for _ in range(45)
         ]
 
     def make_stars(self):
-        random.seed(19)
+        rng = random.Random(19)
         return [
             (
-                random.randrange(0, WIDTH),
-                random.randrange(0, HEIGHT + 220),
-                random.choice((1, 1, 1, 2)),
-                random.random() * math.tau,
+                rng.randrange(0, WIDTH),
+                rng.randrange(0, HEIGHT + 220),
+                rng.choice((1, 1, 1, 2)),
+                rng.random() * math.tau,
             )
             for _ in range(95)
         ]
@@ -403,24 +496,202 @@ class Game:
         bottom = marker.y - marker.sprite_offset_y + sprite_height + GOAL_BALLOON_CLEARANCE_BOTTOM
         return top, bottom
 
-    def balloon_y_is_near_goal_marker(self, y):
-        return any(
-            top <= y <= bottom
-            for marker in self.goal_markers
-            for top, bottom in [self.goal_marker_balloon_clearance_band(marker)]
+    def goal_marker_near_balloon_y(self, y):
+        for marker in self.goal_markers:
+            top, bottom = self.goal_marker_balloon_clearance_band(marker)
+            if top <= y <= bottom:
+                return marker
+        return None
+
+    def next_balloon_x(self, margin):
+        left = margin
+        right = WIDTH - margin
+        base_x = max(left, min(right, self.last_balloon_x))
+        drift = self.balloon_rng.randrange(
+            -BALLOON_MAX_HORIZONTAL_DRIFT,
+            BALLOON_MAX_HORIZONTAL_DRIFT + 1,
+        )
+        x = base_x + drift
+
+        # Reflect off the side margins so the randomized path never jumps
+        # across the screen just because it hit an edge.
+        while x < left or x > right:
+            if x < left:
+                x = left + (left - x)
+            elif x > right:
+                x = right - (x - right)
+
+        return x
+
+    def schedule_next_combo_pattern(self):
+        self.balloons_until_combo_pattern = self.balloon_rng.randrange(
+            COLOR_COMBO_REPEAT_GAP_MIN,
+            COLOR_COMBO_REPEAT_GAP_MAX + 1,
+        )
+
+    def record_balloon_color(self, color):
+        if color == self.last_balloon_color:
+            self.balloon_color_streak += 1
+        else:
+            self.last_balloon_color = color
+            self.balloon_color_streak = 1
+
+    def combo_color_choices(self):
+        choices = [color for color in BALLOON_COLORS if color != self.last_balloon_color]
+        return choices or list(BALLOON_COLORS)
+
+    def start_combo_pattern(self):
+        combo_color = self.balloon_rng.choice(self.combo_color_choices())
+        decoy_choices = [color for color in BALLOON_COLORS if color != combo_color]
+        decoy_color = self.balloon_rng.choice(decoy_choices)
+        pattern_name = self.balloon_rng.choice(("side_decoy", "side_finish", "side_middle"))
+
+        if pattern_name == "side_finish":
+            self.pending_combo_steps = [
+                {"main": combo_color},
+                {"main": combo_color},
+                {"main": decoy_color, "side": combo_color, "force_side": True},
+            ]
+        elif pattern_name == "side_middle":
+            self.pending_combo_steps = [
+                {"main": combo_color},
+                {"main": decoy_color, "side": combo_color, "force_side": True},
+                {"main": combo_color},
+            ]
+        else:
+            self.pending_combo_steps = [
+                {"main": combo_color},
+                {"main": combo_color, "side": decoy_color, "force_side": True},
+                {"main": combo_color},
+            ]
+
+    def choose_main_balloon_color(self):
+        self.current_side_color_override = None
+        self.force_current_side_balloon = False
+
+        if self.pending_combo_steps:
+            step = self.pending_combo_steps.pop(0)
+            color = step["main"]
+            self.current_side_color_override = step.get("side")
+            self.force_current_side_balloon = step.get("force_side", False)
+            if not self.pending_combo_steps:
+                self.schedule_next_combo_pattern()
+            self.record_balloon_color(color)
+            return color
+
+        if self.balloons_until_combo_pattern <= 0:
+            self.start_combo_pattern()
+            return self.choose_main_balloon_color()
+
+        self.balloons_until_combo_pattern -= 1
+        choices = list(BALLOON_COLORS)
+        if self.last_balloon_color and self.balloon_color_streak >= 2:
+            choices = [color for color in choices if color != self.last_balloon_color]
+        elif (
+            self.last_balloon_color
+            and self.balloon_color_streak == 1
+            and self.balloon_rng.random() < COLOR_REPEAT_CHANCE
+        ):
+            choices = [self.last_balloon_color]
+
+        color = self.balloon_rng.choice(choices)
+        self.record_balloon_color(color)
+        return color
+
+    def choose_side_balloon_color(self, main_color):
+        if self.balloon_rng.random() < 0.45:
+            return main_color
+
+        choices = [color for color in BALLOON_COLORS if color != main_color]
+        return self.balloon_rng.choice(choices)
+
+    def side_balloon_x(self, main_x, margin):
+        left = margin
+        right = WIDTH - margin
+        candidates = []
+
+        left_min = max(left, main_x - OPTIONAL_SIDE_BALLOON_MAX_X_OFFSET)
+        left_max = min(right, main_x - OPTIONAL_SIDE_BALLOON_MIN_X_OFFSET)
+        if left_min <= left_max:
+            candidates.append((left_min, left_max))
+
+        right_min = max(left, main_x + OPTIONAL_SIDE_BALLOON_MIN_X_OFFSET)
+        right_max = min(right, main_x + OPTIONAL_SIDE_BALLOON_MAX_X_OFFSET)
+        if right_min <= right_max:
+            candidates.append((right_min, right_max))
+
+        if candidates:
+            low, high = self.balloon_rng.choice(candidates)
+            return self.balloon_rng.randrange(round(low), round(high) + 1)
+
+        return max(left, min(right, main_x))
+
+    def maybe_spawn_side_balloon(self, main_x, main_y, main_color):
+        force_side = self.force_current_side_balloon
+        side_color_override = self.current_side_color_override
+        self.force_current_side_balloon = False
+        self.current_side_color_override = None
+
+        if not force_side and self.balloon_rng.random() > OPTIONAL_SIDE_BALLOON_CHANCE:
+            return
+
+        radius = self.balloon_rng.randrange(22, 32)
+        margin = radius + 32
+        x = self.side_balloon_x(main_x, margin)
+        if abs(x - main_x) < OPTIONAL_SIDE_BALLOON_MIN_X_OFFSET * 0.75:
+            return
+
+        y = main_y + self.balloon_rng.randrange(
+            -OPTIONAL_SIDE_BALLOON_Y_JITTER,
+            OPTIONAL_SIDE_BALLOON_Y_JITTER + 1,
+        )
+        if self.goal_marker_near_balloon_y(y):
+            return
+
+        color = side_color_override or self.choose_side_balloon_color(main_color)
+        self.balloons.append(
+            Balloon(x, y, radius, color, self.balloon_rng.random() * math.tau, route_role="side")
+        )
+
+    def spawn_goal_approach_balloon(self, marker):
+        if marker.name in self.goal_approach_marker_names:
+            return
+
+        self.goal_approach_marker_names.add(marker.name)
+        _, clearance_bottom = self.goal_marker_balloon_clearance_band(marker)
+        radius = self.balloon_rng.randrange(27, 34)
+        margin = radius + 32
+        x = marker.x + self.balloon_rng.randrange(
+            -GOAL_APPROACH_X_JITTER,
+            GOAL_APPROACH_X_JITTER + 1,
+        )
+        x = max(margin, min(WIDTH - margin, x))
+        y = clearance_bottom + GOAL_APPROACH_BALLOON_GAP
+        color = self.choose_main_balloon_color()
+
+        # Landmark approach balloons should be clean setup points, not side-choice clutter.
+        self.current_side_color_override = None
+        self.force_current_side_balloon = False
+        self.balloons.append(
+            Balloon(x, y, radius, color, self.balloon_rng.random() * math.tau, route_role="main")
         )
 
     def spawn_balloon(self):
         y = self.next_balloon_y
-        self.next_balloon_y -= random.randrange(BALLOON_SPACING_MIN, BALLOON_SPACING_MAX)
-        if self.balloon_y_is_near_goal_marker(y):
+        self.next_balloon_y -= self.balloon_rng.randrange(BALLOON_SPACING_MIN, BALLOON_SPACING_MAX)
+        nearby_marker = self.goal_marker_near_balloon_y(y)
+        if nearby_marker:
+            self.spawn_goal_approach_balloon(nearby_marker)
+            self.last_balloon_x = nearby_marker.x
             return
 
-        radius = random.randrange(23, 34)
+        radius = self.balloon_rng.randrange(23, 34)
         margin = radius + 32
-        x = random.randrange(margin, WIDTH - margin)
-        color = random.choice(BALLOON_COLORS)
-        self.balloons.append(Balloon(x, y, radius, color, random.random() * math.tau))
+        x = self.next_balloon_x(margin)
+        self.last_balloon_x = x
+        color = self.choose_main_balloon_color()
+        self.balloons.append(Balloon(x, y, radius, color, self.balloon_rng.random() * math.tau))
+        self.maybe_spawn_side_balloon(x, y, color)
 
     def ensure_balloons(self):
         target_top = self.camera_y - 1200
@@ -445,20 +716,47 @@ class Game:
                         self.player.jump()
                     else:
                         self.player.start_slash()
+                elif event.key == pygame.K_p:
+                    self.speed_ramp_enabled = not self.speed_ramp_enabled
+                    self.update_speed_multiplier()
                 elif event.key == pygame.K_r and self.game_over:
                     self.reset()
 
     def update_speed_multiplier(self):
+        if not self.speed_ramp_enabled:
+            self.speed_multiplier = 1.0
+            return
+
         current_height = self.current_height()
         self.speed_multiplier = min(
             MAX_SPEED_MULTIPLIER,
             1.0 + current_height / SPEED_RAMP_HEIGHT,
         )
 
+    def register_balloon_combo_hit(self, color):
+        if color == self.hit_combo_color:
+            self.hit_combo_streak += 1
+        else:
+            self.hit_combo_color = color
+            self.hit_combo_streak = 1
+
+        return self.hit_combo_streak >= COMBO_STREAK_TARGET
+
+    def color_name(self, color):
+        try:
+            return BALLOON_SPRITE_NAMES[BALLOON_COLORS.index(color)]
+        except ValueError:
+            return "color"
+
     def update(self, dt):
         if self.game_over:
             for pop in self.pops:
                 pop.age += dt
+            for feedback in self.combo_feedbacks:
+                feedback.age += dt
+            self.combo_feedbacks = [
+                feedback for feedback in self.combo_feedbacks if feedback.age < COMBO_FEEDBACK_TIME
+            ]
             return
 
         if self.hit_pause_timer > 0:
@@ -473,8 +771,12 @@ class Game:
             if balloon.alive and self.player.sword_hit_circle(balloon):
                 balloon.popped_timer = 0.001
                 self.has_popped_balloon = True
-                self.pops.append(Pop(balloon.x, balloon.y, balloon.color))
-                self.player.bounce(speed_multiplier=self.speed_multiplier)
+                combo_boost = self.register_balloon_combo_hit(balloon.color)
+                self.pops.append(Pop(balloon.x, balloon.y, balloon.color, boosted=combo_boost))
+                if combo_boost:
+                    self.combo_feedbacks.append(ComboFeedback(balloon.x, balloon.y, balloon.color))
+                bounce_speed = COMBO_BOUNCE_SPEED if combo_boost else BOUNCE_SPEED
+                self.player.bounce(speed_multiplier=self.speed_multiplier, speed=bounce_speed)
                 self.hit_pause_timer = HIT_PAUSE_TIME
 
         for marker in self.goal_markers:
@@ -497,6 +799,12 @@ class Game:
         for pop in self.pops:
             pop.age += dt
         self.pops = [pop for pop in self.pops if pop.age < 0.45]
+
+        for feedback in self.combo_feedbacks:
+            feedback.age += dt
+        self.combo_feedbacks = [
+            feedback for feedback in self.combo_feedbacks if feedback.age < COMBO_FEEDBACK_TIME
+        ]
 
         if self.player.y < self.camera_y + HEIGHT * 0.38:
             self.camera_y = self.player.y - HEIGHT * 0.38
@@ -694,12 +1002,37 @@ class Game:
         for pop in self.pops:
             sx, sy = self.world_to_screen(pop.x, pop.y)
             t = pop.age / 0.45
-            for i in range(10):
-                angle = i * math.tau / 10
-                distance = 12 + t * 52
+            particle_count = 18 if pop.boosted else 10
+            max_distance = 84 if pop.boosted else 52
+            for i in range(particle_count):
+                angle = i * math.tau / particle_count
+                distance = 12 + t * max_distance
                 px = sx + math.cos(angle) * distance
                 py = sy + math.sin(angle) * distance + t * 18
-                pygame.draw.circle(self.screen, pop.color, (int(px), int(py)), max(1, int(5 * (1 - t))))
+                size = max(1, int((7 if pop.boosted else 5) * (1 - t)))
+                pygame.draw.circle(self.screen, pop.color, (int(px), int(py)), size)
+                if pop.boosted and i % 3 == 0:
+                    pygame.draw.circle(self.screen, (255, 236, 150), (int(px), int(py)), max(1, size // 2))
+
+    def draw_combo_feedback(self):
+        for feedback in self.combo_feedbacks:
+            sx, sy = self.world_to_screen(feedback.x, feedback.y)
+            t = feedback.age / COMBO_FEEDBACK_TIME
+            if t >= 1:
+                continue
+
+            y = sy - int(72 * t) - 34
+            pulse = 1.0 + math.sin(t * math.pi) * 0.14
+            ring_radius = int((28 + 44 * t) * pulse)
+            line_width = max(1, int(5 * (1 - t)))
+            pygame.draw.circle(self.screen, (255, 236, 150), (sx, sy), ring_radius, line_width)
+            pygame.draw.circle(self.screen, feedback.color, (sx, sy), max(4, int(ring_radius * 0.28)), 2)
+
+            shadow = self.big_font.render("combo!", True, (13, 14, 22))
+            label = self.big_font.render("combo!", True, (255, 236, 150))
+            rect = label.get_rect(center=(sx, y))
+            self.screen.blit(shadow, rect.move(2, 3))
+            self.screen.blit(label, rect)
 
     def current_player_sprite_name(self):
         if self.player.slashing:
@@ -787,10 +1120,24 @@ class Game:
     def draw_hud(self):
         height_text = self.font.render(f"height {self.best_height}m", True, WHITE)
         self.screen.blit(height_text, (18, 16))
-        speed_text = self.small_font.render(f"speed x{self.speed_multiplier:.2f}", True, (232, 239, 234))
+        speed_label = f"speed x{self.speed_multiplier:.2f}"
+        if not self.speed_ramp_enabled:
+            speed_label += " ramp off"
+        speed_text = self.small_font.render(speed_label, True, (232, 239, 234))
         self.screen.blit(speed_text, (18, 44))
 
-        hint = self.small_font.render("arrows move   space jump/downslash   esc quit", True, (232, 239, 234))
+        if self.hit_combo_streak > 0 and self.hit_combo_color:
+            combo_name = self.color_name(self.hit_combo_color)
+            combo_label = f"combo {combo_name} {self.hit_combo_streak}/{COMBO_STREAK_TARGET}"
+            combo_text = self.small_font.render(combo_label, True, self.hit_combo_color)
+            combo_shadow = self.small_font.render(combo_label, True, (11, 13, 18))
+            self.screen.blit(combo_shadow, (19, 68))
+            self.screen.blit(combo_text, (18, 67))
+            dot_x = 28 + combo_text.get_width()
+            pygame.draw.circle(self.screen, self.hit_combo_color, (dot_x, 76), 6)
+            pygame.draw.circle(self.screen, WHITE, (dot_x, 76), 6, 1)
+
+        hint = self.small_font.render("arrows move   space jump/downslash   P speed ramp   esc quit", True, (232, 239, 234))
         self.screen.blit(hint, (18, HEIGHT - 30))
 
         if self.game_over:
@@ -814,6 +1161,7 @@ class Game:
             self.draw_balloon(balloon)
         self.draw_pop_particles()
         self.draw_player()
+        self.draw_combo_feedback()
         self.draw_hud()
         pygame.display.flip()
 

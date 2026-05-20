@@ -132,6 +132,8 @@ FOCUS_JS = """        const blockedKeys = new Set([
             "Spacebar",
             "r",
             "R",
+            "p",
+            "P",
         ]);
 
         const focusCanvas = () => {
