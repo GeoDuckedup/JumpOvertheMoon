@@ -1,0 +1,304 @@
+import asyncio
+import math
+import random
+
+import pygame
+
+from balloon_gen import BalloonGenerator
+from constants import *
+from entities import *
+from renderer import Renderer
+
+
+class Game:
+    def __init__(self):
+        pygame.init()
+        pygame.display.set_caption("Cow Sword Climb")
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont("arial", 22, bold=True)
+        self.big_font = pygame.font.SysFont("arial", 52, bold=True)
+        self.small_font = pygame.font.SysFont("arial", 16, bold=True)
+        self.cat_sprites = self.load_cat_sprites()
+        self.balloon_sprites = self.load_balloon_sprites()
+        self.goal_marker_sprites = self.load_goal_marker_sprites()
+        self.renderer = Renderer(
+            self.screen,
+            self.font,
+            self.big_font,
+            self.small_font,
+            self.cat_sprites,
+            self.balloon_sprites,
+            self.goal_marker_sprites,
+        )
+        self.run_seed_rng = random.Random()
+        self.running = True
+        self.reset()
+
+    def load_cat_sprites(self):
+        sprites = {}
+        try:
+            for name in ("idle", "jump", "slash", "fall"):
+                sprites[name] = pygame.image.load(ASSET_DIR / f"cat_{name}.png").convert_alpha()
+        except (FileNotFoundError, pygame.error):
+            return None
+        return sprites
+
+    def load_balloon_sprites(self):
+        sprites = {}
+        try:
+            for color, name in zip(BALLOON_COLORS, BALLOON_SPRITE_NAMES):
+                sprites[color] = pygame.image.load(ASSET_DIR / f"balloon_{name}.png").convert_alpha()
+        except (FileNotFoundError, pygame.error):
+            return None
+        return sprites
+
+    def load_goal_marker_sprites(self):
+        sprites = {}
+        try:
+            for marker in GOAL_MARKER_DATA:
+                name = marker["asset_name"]
+                sprites[name] = pygame.image.load(ASSET_DIR / f"goal_{name}.png").convert_alpha()
+        except (FileNotFoundError, pygame.error):
+            return None
+        return sprites
+
+    def reset(self):
+        self.player = Player()
+        self.camera_y = 0.0
+        self.best_height = 0
+        self.speed_multiplier = 1.0
+        self.speed_ramp_enabled = True
+        self.hit_pause_timer = 0.0
+        self.game_over = False
+        self.has_popped_balloon = False
+        self.hit_combo_color = None
+        self.hit_combo_streak = 0
+        self.combo_feedbacks = []
+        self.pops = []
+        self.clouds = self.make_clouds()
+        self.stars = self.make_stars()
+        self.goal_markers = self.make_goal_markers()
+        self.balloon_rng = random.Random(self.run_seed_rng.randrange(1 << 63))
+        self.balloon_gen = BalloonGenerator(
+            rng=self.balloon_rng,
+            goal_markers=self.goal_markers,
+            goal_marker_sprites=self.goal_marker_sprites,
+        )
+        self.balloons = []
+        while self.balloon_gen.next_balloon_y > -1800:
+            self.balloons.extend(self.balloon_gen.spawn_balloon())
+
+    def make_goal_markers(self):
+        return [
+            GoalMarker(
+                name=marker["name"],
+                asset_name=marker["asset_name"],
+                height=marker["height"],
+                x=marker["x"],
+                y=WORLD_FLOOR_Y - marker["height"] * 10,
+                sprite_offset_y=marker["sprite_offset_y"],
+                hit_width=marker["hit_width"],
+                hit_height=marker["hit_height"],
+                hit_offset_y=marker["hit_offset_y"],
+            )
+            for marker in GOAL_MARKER_DATA
+        ]
+
+    def make_clouds(self):
+        rng = random.Random(8)
+        return [
+            (
+                rng.randrange(20, WIDTH - 20),
+                rng.randrange(-3600, HEIGHT),
+                rng.randrange(34, 78),
+                rng.random() * 2.0,
+            )
+            for _ in range(45)
+        ]
+
+    def make_stars(self):
+        rng = random.Random(19)
+        return [
+            (
+                rng.randrange(0, WIDTH),
+                rng.randrange(0, HEIGHT + 220),
+                rng.choice((1, 1, 1, 2)),
+                rng.random() * math.tau,
+            )
+            for _ in range(95)
+        ]
+
+    def current_height(self):
+        return max(0.0, (WORLD_FLOOR_Y - self.player.y) / 10)
+
+    def atmosphere_amount(self):
+        t = min(1.0, self.current_height() / ATMOSPHERE_FADE_HEIGHT)
+        return t * t * (3 - 2 * t)
+
+    def ensure_balloons(self):
+        self.balloons.extend(self.balloon_gen.spawn_needed(self.camera_y))
+        self.balloons = [
+            balloon
+            for balloon in self.balloons
+            if balloon.popped_timer < 0.35 and balloon.y < WORLD_FLOOR_Y + 220
+        ]
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.running = False
+                elif event.key == pygame.K_SPACE and not self.game_over:
+                    if self.player.on_ground:
+                        self.player.jump()
+                    else:
+                        self.player.start_slash()
+                elif event.key == pygame.K_p:
+                    self.speed_ramp_enabled = not self.speed_ramp_enabled
+                    self.update_speed_multiplier()
+                elif event.key == pygame.K_r and self.game_over:
+                    self.reset()
+
+    def update_speed_multiplier(self):
+        if not self.speed_ramp_enabled:
+            self.speed_multiplier = 1.0
+            return
+
+        current_height = self.current_height()
+        self.speed_multiplier = min(
+            MAX_SPEED_MULTIPLIER,
+            1.0 + current_height / SPEED_RAMP_HEIGHT,
+        )
+
+    def register_balloon_combo_hit(self, color):
+        if color == self.hit_combo_color:
+            self.hit_combo_streak += 1
+        else:
+            self.hit_combo_color = color
+            self.hit_combo_streak = 1
+
+        return self.hit_combo_streak >= COMBO_STREAK_TARGET
+
+    def update(self, dt):
+        if self.game_over:
+            for pop in self.pops:
+                pop.age += dt
+            for feedback in self.combo_feedbacks:
+                feedback.age += dt
+            self.combo_feedbacks = [
+                feedback for feedback in self.combo_feedbacks if feedback.age < COMBO_FEEDBACK_TIME
+            ]
+            return
+
+        if self.hit_pause_timer > 0:
+            self.hit_pause_timer = max(0.0, self.hit_pause_timer - dt)
+            return
+
+        keys = pygame.key.get_pressed()
+        self.player.update(dt, keys, self.speed_multiplier)
+
+        for balloon in self.balloons:
+            balloon.wobble += dt * 4.0 * self.speed_multiplier
+            if balloon.alive and self.player.sword_hit_circle(balloon):
+                balloon.popped_timer = 0.001
+                self.has_popped_balloon = True
+                combo_boost = self.register_balloon_combo_hit(balloon.color)
+                self.pops.append(Pop(balloon.x, balloon.y, balloon.color, boosted=combo_boost))
+                if combo_boost:
+                    self.combo_feedbacks.append(ComboFeedback(balloon.x, balloon.y, balloon.color))
+                bounce_speed = COMBO_BOUNCE_SPEED if combo_boost else BOUNCE_SPEED
+                self.player.bounce(speed_multiplier=self.speed_multiplier, speed=bounce_speed)
+                self.hit_pause_timer = HIT_PAUSE_TIME
+
+        for marker in self.goal_markers:
+            if marker.alive and self.player.sword_hit_rect(self.goal_marker_hit_rect(marker)):
+                marker.popped_timer = 0.001
+                marker.reached = True
+                self.has_popped_balloon = True
+                self.pops.append(Pop(marker.x, marker.y + marker.hit_offset_y, (245, 245, 226)))
+                self.player.bounce(speed_multiplier=self.speed_multiplier, speed=GOAL_BOUNCE_SPEED)
+                self.hit_pause_timer = HIT_PAUSE_TIME
+
+        for balloon in self.balloons:
+            if balloon.popped_timer > 0:
+                balloon.popped_timer += dt
+
+        for marker in self.goal_markers:
+            if marker.popped_timer > 0:
+                marker.popped_timer += dt
+
+        for pop in self.pops:
+            pop.age += dt
+        self.pops = [pop for pop in self.pops if pop.age < 0.45]
+
+        for feedback in self.combo_feedbacks:
+            feedback.age += dt
+        self.combo_feedbacks = [
+            feedback for feedback in self.combo_feedbacks if feedback.age < COMBO_FEEDBACK_TIME
+        ]
+
+        if self.player.y < self.camera_y + HEIGHT * 0.38:
+            self.camera_y = self.player.y - HEIGHT * 0.38
+        elif self.player.y > self.camera_y + HEIGHT * 0.64:
+            self.camera_y = self.player.y - HEIGHT * 0.64
+        self.camera_y = min(0.0, self.camera_y)
+
+        height = max(0, int((WORLD_FLOOR_Y - self.player.y) / 10))
+        self.best_height = max(self.best_height, height)
+        self.update_speed_multiplier()
+
+        self.ensure_balloons()
+
+        if self.has_popped_balloon and self.player.on_ground and self.player_on_world_floor():
+            self.game_over = True
+
+    def player_on_world_floor(self):
+        floor_player_y = WORLD_FLOOR_Y - CAT_H * 0.5
+        return self.player.y >= floor_player_y - 0.5
+
+    def goal_marker_hit_rect(self, marker):
+        return pygame.Rect(
+            round(marker.x - marker.hit_width * 0.5),
+            round(marker.y + marker.hit_offset_y - marker.hit_height * 0.5),
+            round(marker.hit_width),
+            round(marker.hit_height),
+        )
+
+    def draw(self):
+        self.renderer.draw(
+            player=self.player,
+            balloons=self.balloons,
+            goal_markers=self.goal_markers,
+            pops=self.pops,
+            combo_feedbacks=self.combo_feedbacks,
+            clouds=self.clouds,
+            stars=self.stars,
+            camera_y=self.camera_y,
+            atmosphere=self.atmosphere_amount(),
+            best_height=self.best_height,
+            speed_multiplier=self.speed_multiplier,
+            speed_ramp_enabled=self.speed_ramp_enabled,
+            game_over=self.game_over,
+            hit_combo_streak=self.hit_combo_streak,
+            hit_combo_color=self.hit_combo_color,
+        )
+
+    def run_frame(self):
+        dt = min(1 / 30, self.clock.tick(FPS) / 1000)
+        self.handle_events()
+        self.update(dt)
+        self.draw()
+
+    async def run_async(self):
+        try:
+            while self.running:
+                self.run_frame()
+                await asyncio.sleep(0)
+        finally:
+            pygame.quit()
+
+    def run(self):
+        asyncio.run(self.run_async())

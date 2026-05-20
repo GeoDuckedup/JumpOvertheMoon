@@ -36,3 +36,19 @@ Original prompt: phase 1
 ## TODO
 
 - Phase 5 should be a feel pass: tune combo frequency, optional side-balloon density, landmark approach distance, and whether the 2x boost should be stronger/weaker.
+
+## Refactor Notes
+
+- Refactor phase 1 added `cat-sword-climb/scripts/refactor_characterization.py` as a repeatable no-behavior-change baseline.
+- Baseline fingerprint before splitting `main.py`: `597a69a128638bd6bc910a6b2b62b8d391e34955cdb960dec4844f510e517fba`.
+- Baseline checks cover milestone order/assets, seeded balloon layout summaries, combo streak behavior, speed-ramp-off behavior, landmark approach balloons, and clearance-band violations.
+- Refactor phase 2 extracted constants/config into `cat-sword-climb/constants.py` and entity/player classes into `cat-sword-climb/entities.py`.
+- Phase 2 kept the characterization fingerprint unchanged at `597a69a128638bd6bc910a6b2b62b8d391e34955cdb960dec4844f510e517fba` and the web build completed with the new modules packaged.
+- Refactor phase 3 extracted balloon route/color/landmark-approach generation into `cat-sword-climb/balloon_gen.py`.
+- Phase 3 kept the characterization fingerprint unchanged at `597a69a128638bd6bc910a6b2b62b8d391e34955cdb960dec4844f510e517fba`; seeded balloon totals, side counts, combo pattern counts, landmark approach balloons, and clearance checks stayed identical. The web build completed with `balloon_gen.py` packaged.
+- Refactor phase 4 extracted drawing into `cat-sword-climb/renderer.py`; `Game` now delegates `draw()` to `Renderer` while keeping input, state updates, physics, and collision.
+- Phase 4 kept the characterization fingerprint unchanged at `597a69a128638bd6bc910a6b2b62b8d391e34955cdb960dec4844f510e517fba`, passed a dummy-video draw smoke test, and the web build completed with `renderer.py` packaged.
+- Refactor phase 5 moved the `Game` orchestrator into `cat-sword-climb/game.py`; `main.py` now launches the game by importing `Game`.
+- Phase 5 kept the characterization fingerprint unchanged at `597a69a128638bd6bc910a6b2b62b8d391e34955cdb960dec4844f510e517fba`, passed the dummy-video draw smoke test, and the web build completed with `game.py` packaged.
+- Refactor phase 6 cleaned `main.py` into a true entry point only and updated the characterization script to import constants independently of `main.py`.
+- Phase 6 kept the characterization fingerprint unchanged at `597a69a128638bd6bc910a6b2b62b8d391e34955cdb960dec4844f510e517fba`, passed `py_compile`, passed the dummy-video draw smoke test, and rebuilt the web export with the final split layout.
