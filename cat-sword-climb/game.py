@@ -34,6 +34,8 @@ class Game:
         self.mobile_controls_detected = self.detect_mobile_controls()
         self.mobile_controls_forced = False
         self.mobile_control_pointers = {}
+        self.mobile_action_ignore_until = 0
+        self.mobile_mouse_ignore_until = 0
         self.run_seed_rng = random.Random()
         self.running = True
         self.reset()
@@ -173,6 +175,27 @@ class Game:
     def mobile_controls_visible(self):
         return self.mobile_controls_detected or self.mobile_controls_forced
 
+    def mobile_now_ms(self):
+        return pygame.time.get_ticks()
+
+    def suppress_mobile_action(self, duration_ms=MOBILE_RETRY_ACTION_SUPPRESS_MS):
+        self.mobile_action_ignore_until = max(
+            self.mobile_action_ignore_until,
+            self.mobile_now_ms() + duration_ms,
+        )
+
+    def suppress_synthetic_mouse(self):
+        self.mobile_mouse_ignore_until = max(
+            self.mobile_mouse_ignore_until,
+            self.mobile_now_ms() + MOBILE_SYNTHETIC_MOUSE_SUPPRESS_MS,
+        )
+
+    def mobile_action_suppressed(self):
+        return self.mobile_now_ms() < self.mobile_action_ignore_until
+
+    def synthetic_mouse_suppressed(self):
+        return self.mobile_now_ms() < self.mobile_mouse_ignore_until
+
     def mobile_control_rects(self):
         y = HEIGHT - MOBILE_CONTROL_MARGIN - MOBILE_ARROW_H
         left = pygame.Rect(
@@ -206,6 +229,9 @@ class Game:
         if not control:
             return False
 
+        if trigger_action and control == "action" and self.mobile_action_suppressed():
+            return True
+
         self.mobile_control_pointers[pointer_id] = control
         if trigger_action and control == "action":
             self.perform_action_button()
@@ -223,6 +249,8 @@ class Game:
 
     def perform_action_button(self):
         if self.game_over:
+            self.suppress_mobile_action()
+            self.suppress_synthetic_mouse()
             self.reset()
             return
 
@@ -250,21 +278,24 @@ class Game:
                 elif event.key == pygame.K_r and self.game_over:
                     self.reset()
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.mobile_controls_visible():
+                if self.mobile_controls_visible() and not self.synthetic_mouse_suppressed():
                     self.press_mobile_control("mouse", event.pos)
             elif event.type == pygame.MOUSEMOTION and event.buttons[0]:
-                if "mouse" in self.mobile_control_pointers:
+                if "mouse" in self.mobile_control_pointers and not self.synthetic_mouse_suppressed():
                     self.release_mobile_control("mouse")
                     self.press_mobile_control("mouse", event.pos, trigger_action=False)
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 self.release_mobile_control("mouse")
             elif event.type == pygame.FINGERDOWN:
                 self.mobile_controls_detected = True
+                self.suppress_synthetic_mouse()
                 pos = (round(event.x * WIDTH), round(event.y * HEIGHT))
                 self.press_mobile_control(event.finger_id, pos)
             elif event.type == pygame.FINGERUP:
+                self.suppress_synthetic_mouse()
                 self.release_mobile_control(event.finger_id)
             elif event.type == pygame.FINGERMOTION:
+                self.suppress_synthetic_mouse()
                 if event.finger_id in self.mobile_control_pointers:
                     self.release_mobile_control(event.finger_id)
                     pos = (round(event.x * WIDTH), round(event.y * HEIGHT))
@@ -288,7 +319,14 @@ class Game:
             self.hit_combo_color = color
             self.hit_combo_streak = 1
 
-        return self.hit_combo_streak >= COMBO_STREAK_TARGET
+        return self.hit_combo_streak
+
+    def combo_reward(self, streak):
+        if streak >= COMBO_STREAK_TARGET:
+            return COMBO_BOUNCE_SPEED, "combo!"
+        if streak >= MATCH_STREAK_TARGET:
+            return MATCH_BOUNCE_SPEED, "match!"
+        return BOUNCE_SPEED, None
 
     def update(self, dt):
         if self.game_over:
@@ -313,11 +351,13 @@ class Game:
             if balloon.alive and self.player.sword_hit_circle(balloon):
                 balloon.popped_timer = 0.001
                 self.has_popped_balloon = True
-                combo_boost = self.register_balloon_combo_hit(balloon.color)
-                self.pops.append(Pop(balloon.x, balloon.y, balloon.color, boosted=combo_boost))
-                if combo_boost:
-                    self.combo_feedbacks.append(ComboFeedback(balloon.x, balloon.y, balloon.color))
-                bounce_speed = COMBO_BOUNCE_SPEED if combo_boost else BOUNCE_SPEED
+                streak = self.register_balloon_combo_hit(balloon.color)
+                bounce_speed, feedback_label = self.combo_reward(streak)
+                self.pops.append(Pop(balloon.x, balloon.y, balloon.color, boosted=feedback_label is not None))
+                if feedback_label:
+                    self.combo_feedbacks.append(
+                        ComboFeedback(balloon.x, balloon.y, balloon.color, feedback_label)
+                    )
                 self.player.bounce(speed_multiplier=self.speed_multiplier, speed=bounce_speed)
                 self.hit_pause_timer = HIT_PAUSE_TIME
 

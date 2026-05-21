@@ -35,6 +35,7 @@ class ComboFeedback:
     x: float
     y: float
     color: tuple[int, int, int]
+    label: str = "combo!"
     age: float = 0.0
 
 

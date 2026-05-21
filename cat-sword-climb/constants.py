@@ -21,8 +21,11 @@ SLASH_DIVE_SPEED = 560.0
 HIT_PAUSE_TIME = 0.055
 GROUND_JUMP_SPEED = 860.0
 BOUNCE_SPEED = 920.0
+MATCH_STREAK_TARGET = 2
 COMBO_STREAK_TARGET = 3
-COMBO_BOUNCE_HEIGHT_MULTIPLIER = 1.5
+MATCH_BOUNCE_HEIGHT_MULTIPLIER = 1.25
+COMBO_BOUNCE_HEIGHT_MULTIPLIER = 1.75
+MATCH_BOUNCE_SPEED = BOUNCE_SPEED * math.sqrt(MATCH_BOUNCE_HEIGHT_MULTIPLIER)
 COMBO_BOUNCE_SPEED = BOUNCE_SPEED * math.sqrt(COMBO_BOUNCE_HEIGHT_MULTIPLIER)
 COMBO_FEEDBACK_TIME = 0.75
 SPEED_RAMP_HEIGHT = 5200.0
@@ -37,6 +40,8 @@ MOBILE_CONTROL_ALPHA = 96
 MOBILE_CONTROL_PRESSED_ALPHA = 150
 MOBILE_CONTROL_BORDER_ALPHA = 175
 MOBILE_CONTROL_SHADOW_ALPHA = 72
+MOBILE_RETRY_ACTION_SUPPRESS_MS = 320
+MOBILE_SYNTHETIC_MOUSE_SUPPRESS_MS = 700
 
 WORLD_FLOOR_Y = 660.0
 BALLOON_SPACING_MIN = 115
@@ -46,10 +51,6 @@ OPTIONAL_SIDE_BALLOON_CHANCE = 0.35
 OPTIONAL_SIDE_BALLOON_MIN_X_OFFSET = 130
 OPTIONAL_SIDE_BALLOON_MAX_X_OFFSET = 245
 OPTIONAL_SIDE_BALLOON_Y_JITTER = 46
-COLOR_COMBO_FIRST_GAP_MIN = 5
-COLOR_COMBO_FIRST_GAP_MAX = 9
-COLOR_COMBO_REPEAT_GAP_MIN = 11
-COLOR_COMBO_REPEAT_GAP_MAX = 18
 COLOR_REPEAT_CHANCE = 0.35
 
 SKY_TOP = (42, 54, 86)
@@ -94,7 +95,7 @@ GOAL_MARKER_DATA = [
     {
         "name": "Space Station",
         "asset_name": "station",
-        "height": 700,
+        "height": 1133,
         "x": WIDTH * 0.5,
         "sprite_offset_y": 84,
         "hit_width": 280,
@@ -104,7 +105,7 @@ GOAL_MARKER_DATA = [
     {
         "name": "Moon",
         "asset_name": "moon",
-        "height": 1060,
+        "height": 1980,
         "x": WIDTH * 0.5,
         "sprite_offset_y": 28,
         "hit_width": 230,
@@ -114,7 +115,7 @@ GOAL_MARKER_DATA = [
     {
         "name": "Mars",
         "asset_name": "mars",
-        "height": 1460,
+        "height": 2921,
         "x": WIDTH * 0.5,
         "sprite_offset_y": 30,
         "hit_width": 230,
@@ -124,7 +125,7 @@ GOAL_MARKER_DATA = [
     {
         "name": "Jupiter",
         "asset_name": "jupiter",
-        "height": 1890,
+        "height": 3932,
         "x": WIDTH * 0.5,
         "sprite_offset_y": 25,
         "hit_width": 240,
@@ -134,7 +135,7 @@ GOAL_MARKER_DATA = [
     {
         "name": "Saturn",
         "asset_name": "saturn",
-        "height": 2340,
+        "height": 4991,
         "x": WIDTH * 0.5,
         "sprite_offset_y": 35,
         "hit_width": 315,
@@ -144,7 +145,7 @@ GOAL_MARKER_DATA = [
     {
         "name": "Uranus",
         "asset_name": "uranus",
-        "height": 2820,
+        "height": 6120,
         "x": WIDTH * 0.5,
         "sprite_offset_y": 28,
         "hit_width": 205,
@@ -154,7 +155,7 @@ GOAL_MARKER_DATA = [
     {
         "name": "Neptune",
         "asset_name": "neptune",
-        "height": 3330,
+        "height": 7320,
         "x": WIDTH * 0.5,
         "sprite_offset_y": 28,
         "hit_width": 205,

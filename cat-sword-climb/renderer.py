@@ -238,8 +238,8 @@ class Renderer:
             pygame.draw.circle(self.screen, (255, 236, 150), (sx, sy), ring_radius, line_width)
             pygame.draw.circle(self.screen, feedback.color, (sx, sy), max(4, int(ring_radius * 0.28)), 2)
 
-            shadow = self.big_font.render("combo!", True, (13, 14, 22))
-            label = self.big_font.render("combo!", True, (255, 236, 150))
+            shadow = self.big_font.render(feedback.label, True, (13, 14, 22))
+            label = self.big_font.render(feedback.label, True, (255, 236, 150))
             rect = label.get_rect(center=(sx, y))
             self.screen.blit(shadow, rect.move(2, 3))
             self.screen.blit(label, rect)

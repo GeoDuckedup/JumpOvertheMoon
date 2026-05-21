@@ -44,8 +44,8 @@ def color_index(module, color):
     return module.BALLOON_COLORS.index(color)
 
 
-def detect_combo_patterns(module, balloons):
-    patterns = {"side_decoy": 0, "side_finish": 0, "side_middle": 0}
+def detect_side_combo_shapes(module, balloons):
+    shapes = {"side_decoy": 0, "side_finish": 0, "side_middle": 0}
     main_indices = [i for i, balloon in enumerate(balloons) if balloon.route_role == "main"]
 
     for i, side in enumerate(balloons):
@@ -71,21 +71,40 @@ def detect_combo_patterns(module, balloons):
                 prev_before_anchor.color == anchor.color == next_main.color
                 and side.color != anchor.color
             ):
-                patterns["side_decoy"] += 1
+                shapes["side_decoy"] += 1
             if (
                 prev_before_anchor.color == side.color == next_main.color
                 and anchor.color != side.color
             ):
-                patterns["side_middle"] += 1
+                shapes["side_middle"] += 1
 
         if prev_two_before_anchor and prev_before_anchor:
             if (
                 prev_two_before_anchor.color == prev_before_anchor.color == side.color
                 and anchor.color != side.color
             ):
-                patterns["side_finish"] += 1
+                shapes["side_finish"] += 1
 
-    return patterns
+    return shapes
+
+
+def side_color_match_summary(balloons):
+    main_anchor = None
+    matches = 0
+    total = 0
+    for balloon in balloons:
+        if balloon.route_role == "main":
+            main_anchor = balloon
+        elif balloon.route_role == "side" and main_anchor:
+            total += 1
+            if balloon.color == main_anchor.color:
+                matches += 1
+
+    return {
+        "matches": matches,
+        "total": total,
+        "ratio": round(matches / total, 3) if total else 0.0,
+    }
 
 
 def reset_with_seed(game, seed):
@@ -111,7 +130,7 @@ def summarize_seed(module, game, seed):
     balloons = game.balloons
     main_count = sum(1 for balloon in balloons if balloon.route_role == "main")
     side_count = sum(1 for balloon in balloons if balloon.route_role == "side")
-    patterns = detect_combo_patterns(module, balloons)
+    side_combo_shapes = detect_side_combo_shapes(module, balloons)
 
     sample = [
         {
@@ -157,7 +176,8 @@ def summarize_seed(module, game, seed):
         "balloon_count": len(balloons),
         "main_count": main_count,
         "side_count": side_count,
-        "patterns": patterns,
+        "side_combo_shapes": side_combo_shapes,
+        "side_color_matches": side_color_match_summary(balloons),
         "sample": sample,
         "approach_gaps": approach_gaps,
         "clearance_violations": clearance_violations,
@@ -190,6 +210,10 @@ def characterize():
         color_index(module, game.hit_combo_color),
         game.hit_combo_streak,
     ]
+    combo_reward_labels = [
+        game.combo_reward(streak)[1]
+        for streak in range(1, 5)
+    ]
 
     game.speed_ramp_enabled = False
     game.speed_multiplier = 1.37
@@ -197,6 +221,15 @@ def characterize():
     speed_ramp_off_multiplier = game.speed_multiplier
 
     seed_summaries = [summarize_seed(module, game, seed) for seed in SEEDS]
+    scheduler_attrs = [
+        "pending_combo_steps",
+        "current_side_color_override",
+        "force_current_side_balloon",
+        "balloons_until_combo_pattern",
+    ]
+    generator_has_scheduler_state = any(
+        hasattr(game.balloon_gen, attr) for attr in scheduler_attrs
+    )
 
     pygame.quit()
 
@@ -208,10 +241,14 @@ def characterize():
             "state_after_five": combo_state_after_five,
             "break_result": break_result,
             "state_after_break": combo_state_after_break,
-            "height_multiplier": module.COMBO_BOUNCE_HEIGHT_MULTIPLIER,
-            "speed": round(module.COMBO_BOUNCE_SPEED, 4),
+            "match_height_multiplier": module.MATCH_BOUNCE_HEIGHT_MULTIPLIER,
+            "combo_height_multiplier": module.COMBO_BOUNCE_HEIGHT_MULTIPLIER,
+            "match_speed": round(module.MATCH_BOUNCE_SPEED, 4),
+            "combo_speed": round(module.COMBO_BOUNCE_SPEED, 4),
+            "reward_labels": combo_reward_labels,
         },
         "speed_ramp_off_multiplier": speed_ramp_off_multiplier,
+        "generator_has_scheduler_state": generator_has_scheduler_state,
         "seeds": seed_summaries,
     }
 
@@ -223,13 +260,13 @@ def characterize():
 def validate(payload):
     expected_markers = [
         ("Prop Plane", 380),
-        ("Space Station", 700),
-        ("Moon", 1060),
-        ("Mars", 1460),
-        ("Jupiter", 1890),
-        ("Saturn", 2340),
-        ("Uranus", 2820),
-        ("Neptune", 3330),
+        ("Space Station", 1133),
+        ("Moon", 1980),
+        ("Mars", 2921),
+        ("Jupiter", 3932),
+        ("Saturn", 4991),
+        ("Uranus", 6120),
+        ("Neptune", 7320),
     ]
     markers = [(marker["name"], marker["height"]) for marker in payload["markers"]]
     assert markers == expected_markers, markers
@@ -243,18 +280,22 @@ def validate(payload):
         "station",
         "uranus",
     ]
-    assert payload["combo"]["sequence_same_color"] == [False, False, True, True, True]
+    assert payload["combo"]["sequence_same_color"] == [1, 2, 3, 4, 5]
     assert payload["combo"]["state_after_five"] == [0, 5]
-    assert payload["combo"]["break_result"] is False
+    assert payload["combo"]["break_result"] == 1
     assert payload["combo"]["state_after_break"] == [1, 1]
-    assert payload["combo"]["height_multiplier"] == 1.5
+    assert payload["combo"]["match_height_multiplier"] == 1.25
+    assert payload["combo"]["combo_height_multiplier"] == 1.75
+    assert payload["combo"]["reward_labels"] == [None, "match!", "combo!", "combo!"]
     assert payload["speed_ramp_off_multiplier"] == 1.0
+    assert payload["generator_has_scheduler_state"] is False
 
     for seed_summary in payload["seeds"]:
         assert not seed_summary["clearance_violations"], seed_summary
         assert all(value is not None for value in seed_summary["approach_gaps"].values())
         assert seed_summary["main_count"] > seed_summary["side_count"]
         assert seed_summary["side_count"] > 0
+        assert seed_summary["side_color_matches"]["ratio"] <= 0.35
 
 
 def main():
@@ -273,15 +314,18 @@ def main():
     print("markers:", ", ".join(f"{m['name']}={m['height']}m" for m in payload["markers"]))
     print("combo sequence:", payload["combo"]["sequence_same_color"])
     for seed_summary in payload["seeds"]:
-        pattern_total = sum(seed_summary["patterns"].values())
+        shape_total = sum(seed_summary["side_combo_shapes"].values())
+        match_summary = seed_summary["side_color_matches"]
         print(
             "seed {seed}: balloons={balloon_count} main={main_count} "
-            "side={side_count} patterns={patterns}".format(
+            "side={side_count} side_shapes={shapes} side_match={matches}/{total}".format(
                 seed=seed_summary["seed"],
                 balloon_count=seed_summary["balloon_count"],
                 main_count=seed_summary["main_count"],
                 side_count=seed_summary["side_count"],
-                patterns=pattern_total,
+                shapes=shape_total,
+                matches=match_summary["matches"],
+                total=match_summary["total"],
             )
         )
 

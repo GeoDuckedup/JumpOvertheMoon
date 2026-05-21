@@ -12,13 +12,6 @@ class BalloonGenerator:
         self.last_balloon_x = WIDTH * 0.5
         self.last_balloon_color = None
         self.balloon_color_streak = 0
-        self.pending_combo_steps = []
-        self.current_side_color_override = None
-        self.force_current_side_balloon = False
-        self.balloons_until_combo_pattern = self.rng.randrange(
-            COLOR_COMBO_FIRST_GAP_MIN,
-            COLOR_COMBO_FIRST_GAP_MAX + 1,
-        )
         self.next_balloon_y = WORLD_FLOOR_Y - 150
         self.goal_approach_marker_names = set()
 
@@ -56,12 +49,6 @@ class BalloonGenerator:
 
         return x
 
-    def schedule_next_combo_pattern(self):
-        self.balloons_until_combo_pattern = self.rng.randrange(
-            COLOR_COMBO_REPEAT_GAP_MIN,
-            COLOR_COMBO_REPEAT_GAP_MAX + 1,
-        )
-
     def record_balloon_color(self, color):
         if color == self.last_balloon_color:
             self.balloon_color_streak += 1
@@ -69,54 +56,7 @@ class BalloonGenerator:
             self.last_balloon_color = color
             self.balloon_color_streak = 1
 
-    def combo_color_choices(self):
-        choices = [color for color in BALLOON_COLORS if color != self.last_balloon_color]
-        return choices or list(BALLOON_COLORS)
-
-    def start_combo_pattern(self):
-        combo_color = self.rng.choice(self.combo_color_choices())
-        decoy_choices = [color for color in BALLOON_COLORS if color != combo_color]
-        decoy_color = self.rng.choice(decoy_choices)
-        pattern_name = self.rng.choice(("side_decoy", "side_finish", "side_middle"))
-
-        if pattern_name == "side_finish":
-            self.pending_combo_steps = [
-                {"main": combo_color},
-                {"main": combo_color},
-                {"main": decoy_color, "side": combo_color, "force_side": True},
-            ]
-        elif pattern_name == "side_middle":
-            self.pending_combo_steps = [
-                {"main": combo_color},
-                {"main": decoy_color, "side": combo_color, "force_side": True},
-                {"main": combo_color},
-            ]
-        else:
-            self.pending_combo_steps = [
-                {"main": combo_color},
-                {"main": combo_color, "side": decoy_color, "force_side": True},
-                {"main": combo_color},
-            ]
-
     def choose_main_balloon_color(self):
-        self.current_side_color_override = None
-        self.force_current_side_balloon = False
-
-        if self.pending_combo_steps:
-            step = self.pending_combo_steps.pop(0)
-            color = step["main"]
-            self.current_side_color_override = step.get("side")
-            self.force_current_side_balloon = step.get("force_side", False)
-            if not self.pending_combo_steps:
-                self.schedule_next_combo_pattern()
-            self.record_balloon_color(color)
-            return color
-
-        if self.balloons_until_combo_pattern <= 0:
-            self.start_combo_pattern()
-            return self.choose_main_balloon_color()
-
-        self.balloons_until_combo_pattern -= 1
         choices = list(BALLOON_COLORS)
         if self.last_balloon_color and self.balloon_color_streak >= 2:
             choices = [color for color in choices if color != self.last_balloon_color]
@@ -131,12 +71,8 @@ class BalloonGenerator:
         self.record_balloon_color(color)
         return color
 
-    def choose_side_balloon_color(self, main_color):
-        if self.rng.random() < 0.45:
-            return main_color
-
-        choices = [color for color in BALLOON_COLORS if color != main_color]
-        return self.rng.choice(choices)
+    def choose_side_balloon_color(self):
+        return self.rng.choice(BALLOON_COLORS)
 
     def side_balloon_x(self, main_x, margin):
         left = margin
@@ -159,13 +95,8 @@ class BalloonGenerator:
 
         return max(left, min(right, main_x))
 
-    def maybe_spawn_side_balloon(self, main_x, main_y, main_color):
-        force_side = self.force_current_side_balloon
-        side_color_override = self.current_side_color_override
-        self.force_current_side_balloon = False
-        self.current_side_color_override = None
-
-        if not force_side and self.rng.random() > OPTIONAL_SIDE_BALLOON_CHANCE:
+    def maybe_spawn_side_balloon(self, main_x, main_y):
+        if self.rng.random() > OPTIONAL_SIDE_BALLOON_CHANCE:
             return None
 
         radius = self.rng.randrange(22, 32)
@@ -181,7 +112,7 @@ class BalloonGenerator:
         if self.goal_marker_near_balloon_y(y):
             return None
 
-        color = side_color_override or self.choose_side_balloon_color(main_color)
+        color = self.choose_side_balloon_color()
         return Balloon(x, y, radius, color, self.rng.random() * math.tau, route_role="side")
 
     def spawn_goal_approach_balloon(self, marker):
@@ -200,9 +131,6 @@ class BalloonGenerator:
         y = clearance_bottom + GOAL_APPROACH_BALLOON_GAP
         color = self.choose_main_balloon_color()
 
-        # Landmark approach balloons should be clean setup points, not side-choice clutter.
-        self.current_side_color_override = None
-        self.force_current_side_balloon = False
         return Balloon(x, y, radius, color, self.rng.random() * math.tau, route_role="main")
 
     def spawn_balloon(self):
@@ -223,7 +151,7 @@ class BalloonGenerator:
         self.last_balloon_x = x
         color = self.choose_main_balloon_color()
         results.append(Balloon(x, y, radius, color, self.rng.random() * math.tau))
-        side = self.maybe_spawn_side_balloon(x, y, color)
+        side = self.maybe_spawn_side_balloon(x, y)
         if side:
             results.append(side)
         return results
