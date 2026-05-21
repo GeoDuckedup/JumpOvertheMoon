@@ -106,6 +106,9 @@ class Game:
         self.pops = []
         self.clouds = self.make_clouds()
         self.stars = self.make_stars()
+        self.visual_rng = random.Random()
+        self.shooting_stars = []
+        self.shooting_star_timer = self.next_shooting_star_delay(0)
         self.goal_markers = self.make_goal_markers()
         self.balloon_rng = random.Random(self.run_seed_rng.randrange(1 << 63))
         self.balloon_gen = BalloonGenerator(
@@ -163,6 +166,70 @@ class Game:
     def atmosphere_amount(self):
         t = min(1.0, self.current_height() / ATMOSPHERE_FADE_HEIGHT)
         return t * t * (3 - 2 * t)
+
+    def next_shooting_star_delay(self, height):
+        interval = SHOOTING_STAR_INTERVALS[-1][2]
+        for min_height, max_height, candidate in SHOOTING_STAR_INTERVALS:
+            if min_height <= height < max_height:
+                interval = candidate
+                break
+        return self.visual_rng.uniform(*interval)
+
+    def spawn_shooting_star(self):
+        travels_right = self.visual_rng.random() < 0.25
+        if travels_right:
+            start_side = self.visual_rng.choice(("top", "left"))
+            if start_side == "top":
+                x = self.visual_rng.uniform(-WIDTH * 0.05, WIDTH * 0.82)
+                y = self.visual_rng.uniform(-40, HEIGHT * 0.18)
+            else:
+                x = self.visual_rng.uniform(-70, WIDTH * 0.22)
+                y = self.visual_rng.uniform(HEIGHT * 0.05, HEIGHT * 0.42)
+            angle = self.visual_rng.uniform(math.radians(24), math.radians(48))
+        else:
+            start_side = self.visual_rng.choice(("top", "right"))
+            if start_side == "top":
+                x = self.visual_rng.uniform(WIDTH * 0.18, WIDTH * 1.05)
+                y = self.visual_rng.uniform(-40, HEIGHT * 0.18)
+            else:
+                x = self.visual_rng.uniform(WIDTH * 0.78, WIDTH + 70)
+                y = self.visual_rng.uniform(HEIGHT * 0.05, HEIGHT * 0.42)
+            angle = self.visual_rng.uniform(math.radians(132), math.radians(156))
+
+        speed = self.visual_rng.uniform(520, 760)
+        self.shooting_stars.append(
+            {
+                "x": x,
+                "y": y,
+                "vx": math.cos(angle) * speed,
+                "vy": math.sin(angle) * speed,
+                "age": 0.0,
+                "lifetime": SHOOTING_STAR_LIFETIME * self.visual_rng.uniform(0.82, 1.14),
+                "length": self.visual_rng.uniform(62, 108),
+                "width": self.visual_rng.choice((2, 2, 3)),
+            }
+        )
+
+    def update_shooting_stars(self, dt):
+        height = self.current_height()
+        if height >= SHOOTING_STAR_MIN_HEIGHT and not self.shooting_stars:
+            self.shooting_star_timer -= dt
+            if self.shooting_star_timer <= 0:
+                self.spawn_shooting_star()
+                self.shooting_star_timer = self.next_shooting_star_delay(height)
+
+        for star in self.shooting_stars:
+            star["age"] += dt
+            star["x"] += star["vx"] * dt
+            star["y"] += star["vy"] * dt
+
+        self.shooting_stars = [
+            star
+            for star in self.shooting_stars
+            if star["age"] < star["lifetime"]
+            and star["x"] > -160
+            and star["y"] < HEIGHT + 160
+        ]
 
     def ensure_balloons(self):
         self.balloons.extend(self.balloon_gen.spawn_needed(self.camera_y))
@@ -329,6 +396,8 @@ class Game:
         return BOUNCE_SPEED, None
 
     def update(self, dt):
+        self.update_shooting_stars(dt)
+
         if self.game_over:
             for pop in self.pops:
                 pop.age += dt
@@ -424,7 +493,9 @@ class Game:
             combo_feedbacks=self.combo_feedbacks,
             clouds=self.clouds,
             stars=self.stars,
+            shooting_stars=self.shooting_stars,
             camera_y=self.camera_y,
+            height=self.current_height(),
             atmosphere=self.atmosphere_amount(),
             best_height=self.best_height,
             speed_multiplier=self.speed_multiplier,

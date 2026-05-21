@@ -58,6 +58,64 @@ SKY_BOTTOM = (123, 177, 204)
 SPACE_TOP = (3, 5, 18)
 SPACE_BOTTOM = (13, 18, 42)
 ATMOSPHERE_FADE_HEIGHT = 950.0
+BACKGROUND_PHASES = (
+    {
+        "height": 0,
+        "top": (47, 68, 113),
+        "bottom": (140, 194, 218),
+        "cloud": 1.0,
+        "star": 0.0,
+        "nebula": 0.0,
+    },
+    {
+        "height": 900,
+        "top": (24, 34, 78),
+        "bottom": (92, 139, 190),
+        "cloud": 0.45,
+        "star": 0.18,
+        "nebula": 0.0,
+    },
+    {
+        "height": 1800,
+        "top": (5, 11, 36),
+        "bottom": (24, 42, 84),
+        "cloud": 0.08,
+        "star": 0.62,
+        "nebula": 0.08,
+    },
+    {
+        "height": 3300,
+        "top": (1, 3, 16),
+        "bottom": (8, 13, 38),
+        "cloud": 0.0,
+        "star": 0.95,
+        "nebula": 0.34,
+    },
+    {
+        "height": 5600,
+        "top": (10, 3, 29),
+        "bottom": (4, 7, 25),
+        "cloud": 0.0,
+        "star": 1.0,
+        "nebula": 0.82,
+    },
+    {
+        "height": 7600,
+        "top": (22, 5, 46),
+        "bottom": (5, 3, 19),
+        "cloud": 0.0,
+        "star": 1.0,
+        "nebula": 1.0,
+    },
+)
+SHOOTING_STAR_MIN_HEIGHT = 900
+SHOOTING_STAR_INTERVALS = (
+    (900, 1800, (30.0, 51.0)),
+    (1800, 3300, (26.0, 45.0)),
+    (3300, 5600, (21.0, 38.0)),
+    (5600, math.inf, (19.0, 34.0)),
+)
+SHOOTING_STAR_LIFETIME = 0.82
 INK = (28, 25, 31)
 WHITE = (245, 245, 239)
 CAT = (236, 190, 124)

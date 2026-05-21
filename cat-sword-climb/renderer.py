@@ -34,6 +34,29 @@ class Renderer:
             int(a[2] * (1 - t) + b[2] * t),
         )
 
+    def smoothstep(self, t):
+        t = min(1.0, max(0.0, t))
+        return t * t * (3 - 2 * t)
+
+    def background_phase_pair(self, height):
+        phases = BACKGROUND_PHASES
+        for index, phase in enumerate(phases[:-1]):
+            next_phase = phases[index + 1]
+            if height <= next_phase["height"]:
+                span = next_phase["height"] - phase["height"]
+                mix = self.smoothstep((height - phase["height"]) / span)
+                return phase, next_phase, mix
+
+        return phases[-1], phases[-1], 0.0
+
+    def background_color(self, height, key):
+        phase, next_phase, mix = self.background_phase_pair(height)
+        return self.blend_color(phase[key], next_phase[key], mix)
+
+    def background_value(self, height, key):
+        phase, next_phase, mix = self.background_phase_pair(height)
+        return phase[key] * (1 - mix) + next_phase[key] * mix
+
     def color_name(self, color):
         try:
             return BALLOON_SPRITE_NAMES[BALLOON_COLORS.index(color)]
@@ -48,9 +71,9 @@ class Renderer:
             round(marker.hit_height),
         )
 
-    def draw_gradient(self, atmosphere):
-        sky_top = self.blend_color(SKY_TOP, SPACE_TOP, atmosphere)
-        sky_bottom = self.blend_color(SKY_BOTTOM, SPACE_BOTTOM, atmosphere)
+    def draw_gradient(self, height):
+        sky_top = self.background_color(height, "top")
+        sky_bottom = self.background_color(height, "bottom")
         for y in range(0, HEIGHT, 4):
             t = y / HEIGHT
             color = (
@@ -60,11 +83,49 @@ class Renderer:
             )
             pygame.draw.rect(self.screen, color, (0, y, WIDTH, 4))
 
-    def draw_stars(self, stars, camera_y, atmosphere):
-        if atmosphere <= 0.05:
+    def draw_nebula(self, camera_y, height):
+        nebula = self.background_value(height, "nebula")
+        if nebula <= 0.02:
             return
 
-        alpha = int(235 * min(1.0, max(0.0, (atmosphere - 0.05) / 0.65)))
+        layer = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        scroll = camera_y * 0.012
+        ticks = pygame.time.get_ticks() * 0.00008
+
+        for y in range(0, HEIGHT, 6):
+            wave = math.sin(y * 0.013 + scroll + ticks)
+            color = self.blend_color((30, 75, 137), (130, 38, 142), (wave + 1) * 0.5)
+            alpha = int((4 + 8 * abs(wave)) * nebula)
+            pygame.draw.rect(layer, (*color, alpha), (0, y, WIDTH, 6))
+
+        ribbons = (
+            ((65, 139, 211), 0.11, 0.0),
+            ((180, 73, 150), 0.08, 2.1),
+            ((226, 132, 71), 0.06, 4.4),
+        )
+        for color, speed, phase in ribbons:
+            base_y = (camera_y * speed + phase * 120) % (HEIGHT + 520) - 260
+            sway = math.sin(ticks * 4 + phase) * 34
+            alpha = int(18 * nebula)
+            points = [
+                (-80, base_y + sway),
+                (WIDTH + 80, base_y + 110 - sway * 0.4),
+                (WIDTH + 80, base_y + 205 - sway * 0.2),
+                (-80, base_y + 92 + sway * 0.6),
+            ]
+            pygame.draw.polygon(layer, (*color, alpha), points)
+
+        self.screen.blit(layer, (0, 0))
+
+    def draw_stars(self, stars, camera_y, atmosphere, height):
+        star_strength = max(
+            self.background_value(height, "star"),
+            min(1.0, max(0.0, (atmosphere - 0.05) / 0.65)),
+        )
+        if star_strength <= 0.02:
+            return
+
+        alpha = int(235 * star_strength)
         star_layer = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
         ticks = pygame.time.get_ticks() * 0.002
         for x, y, size, phase in stars:
@@ -73,13 +134,60 @@ class Renderer:
             star_alpha = int(alpha * twinkle)
             color = (245, 245, 226, star_alpha)
             pygame.draw.circle(star_layer, color, (int(x), int(sy)), size)
-            if size > 1 and atmosphere > 0.7:
+            if size > 1 and star_strength > 0.7:
                 pygame.draw.line(star_layer, color, (x - 3, sy), (x + 3, sy), 1)
                 pygame.draw.line(star_layer, color, (x, sy - 3), (x, sy + 3), 1)
         self.screen.blit(star_layer, (0, 0))
 
-    def draw_clouds(self, clouds, camera_y, atmosphere):
-        cloud_alpha = int(230 * max(0.0, 1.0 - atmosphere * 1.35))
+    def draw_shooting_stars(self, shooting_stars):
+        if not shooting_stars:
+            return
+
+        layer = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        for star in shooting_stars:
+            t = star["age"] / star["lifetime"]
+            fade = math.sin(min(1.0, max(0.0, t)) * math.pi)
+            if fade <= 0:
+                continue
+
+            speed = max(1.0, math.hypot(star["vx"], star["vy"]))
+            dx = star["vx"] / speed
+            dy = star["vy"] / speed
+            head = (star["x"], star["y"])
+            length = star["length"]
+            alpha = int(205 * fade)
+            width = star["width"]
+
+            for segment in range(4):
+                segment_start = segment / 4
+                segment_end = (segment + 1) / 4
+                start = (
+                    head[0] - dx * length * segment_start,
+                    head[1] - dy * length * segment_start,
+                )
+                end = (
+                    head[0] - dx * length * segment_end,
+                    head[1] - dy * length * segment_end,
+                )
+                segment_alpha = int(alpha * (1 - segment_start) ** 1.7)
+                pygame.draw.line(
+                    layer,
+                    (245, 245, 226, segment_alpha),
+                    (int(start[0]), int(start[1])),
+                    (int(end[0]), int(end[1])),
+                    max(1, width - segment // 2),
+                )
+
+            pygame.draw.circle(layer, (255, 255, 241, alpha), (int(head[0]), int(head[1])), 2)
+
+        self.screen.blit(layer, (0, 0))
+
+    def draw_clouds(self, clouds, camera_y, atmosphere, height):
+        cloud_strength = min(
+            self.background_value(height, "cloud"),
+            max(0.0, 1.0 - atmosphere * 1.15),
+        )
+        cloud_alpha = int(230 * cloud_strength)
         if cloud_alpha <= 0:
             return
 
@@ -455,7 +563,9 @@ class Renderer:
         combo_feedbacks,
         clouds,
         stars,
+        shooting_stars,
         camera_y,
+        height,
         atmosphere,
         best_height,
         speed_multiplier,
@@ -467,9 +577,11 @@ class Renderer:
         mobile_control_rects=None,
         pressed_mobile_controls=None,
     ):
-        self.draw_gradient(atmosphere)
-        self.draw_stars(stars, camera_y, atmosphere)
-        self.draw_clouds(clouds, camera_y, atmosphere)
+        self.draw_gradient(height)
+        self.draw_nebula(camera_y, height)
+        self.draw_stars(stars, camera_y, atmosphere, height)
+        self.draw_shooting_stars(shooting_stars)
+        self.draw_clouds(clouds, camera_y, atmosphere, height)
         self.draw_floor(camera_y)
         self.draw_goal_markers(goal_markers, camera_y)
         for balloon in balloons:

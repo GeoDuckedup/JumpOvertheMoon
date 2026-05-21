@@ -8,16 +8,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 APP_DIR = REPO_ROOT / "cat-sword-climb"
 BUILD_WEB_DIR = APP_DIR / "build" / "web"
 TARGET_DIRS = (REPO_ROOT / "docs", REPO_ROOT / "web")
-PROMPT_HTML = """<div class="infobox-title">COW SWORD CLIMB</div>
-<div class="infobox-subtitle">PRESS SPACEBAR TO START</div>
+SPLASH_ASSET = APP_DIR / "assets" / "splash_over_the_moon.png"
+PROMPT_HTML = """<div class="infobox-subtitle">PRESS SPACEBAR TO START</div>
 <div class="infobox-controls">
     <div>ARROWS MOVE</div>
     <div>SPACE JUMP / DOWNSLASH</div>
     <div>R RESTARTS AFTER FALLEN</div>
 </div>"""
 
-LOADING_HTML = """<div class="infobox-title">COW SWORD CLIMB</div>
-<div class="infobox-subtitle">LOADING</div>
+LOADING_HTML = """<div class="infobox-subtitle">LOADING</div>
 <div class="infobox-note">INSTALLING {pkg.upper()}</div>"""
 
 STATUS_BLOCK = """        #status {
@@ -123,8 +122,9 @@ BODY_BLOCK = """        html,
             margin: 0;
             padding: 0;
             background:
-                radial-gradient(circle at 50% 20%, rgba(120, 217, 255, 0.22), transparent 34%),
-                linear-gradient(180deg, #091020 0%, #17284a 52%, #314f68 100%);
+                linear-gradient(180deg, rgba(4, 7, 18, 0.08), rgba(4, 7, 18, 0.18)),
+                url("splash_over_the_moon.png") center center / cover no-repeat,
+                #050814;
             color: #f6f7ef;
             position: fixed;
             inset: 0;
@@ -332,6 +332,7 @@ def prepare_target(target_dir: Path) -> None:
     if target_dir.exists():
         shutil.rmtree(target_dir)
     shutil.copytree(BUILD_WEB_DIR, target_dir)
+    shutil.copy2(SPLASH_ASSET, target_dir / SPLASH_ASSET.name)
     index_path = target_dir / "index.html"
     index_path.write_text(patch_index_html(index_path.read_text()))
 
@@ -339,6 +340,8 @@ def prepare_target(target_dir: Path) -> None:
 def main() -> None:
     if not BUILD_WEB_DIR.exists():
         raise SystemExit(f"Missing build output: {BUILD_WEB_DIR}")
+    if not SPLASH_ASSET.exists():
+        raise SystemExit(f"Missing splash asset: {SPLASH_ASSET}")
 
     for target_dir in TARGET_DIRS:
         prepare_target(target_dir)

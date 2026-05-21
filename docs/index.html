@@ -71,7 +71,6 @@ async def custom_site():
 
         # now make a prompt
         msg  = """
-<div class="infobox-title">COW SWORD CLIMB</div>
 <div class="infobox-subtitle">PRESS SPACEBAR TO START</div>
 <div class="infobox-controls">
     <div>ARROWS MOVE</div>
@@ -95,7 +94,6 @@ async def custom_site():
 
     def ui_callback(pkg):
         platform.window.infobox.innerHTML = f"""
-<div class="infobox-title">COW SWORD CLIMB</div>
 <div class="infobox-subtitle">LOADING</div>
 <div class="infobox-note">INSTALLING {pkg.upper()}</div>
 """
@@ -305,8 +303,9 @@ function show_infobox() {
             margin: 0;
             padding: 0;
             background:
-                radial-gradient(circle at 50% 20%, rgba(120, 217, 255, 0.22), transparent 34%),
-                linear-gradient(180deg, #091020 0%, #17284a 52%, #314f68 100%);
+                linear-gradient(180deg, rgba(4, 7, 18, 0.08), rgba(4, 7, 18, 0.18)),
+                url("splash_over_the_moon.png") center center / cover no-repeat,
+                #050814;
             color: #f6f7ef;
             position: fixed;
             inset: 0;
