@@ -102,6 +102,10 @@ CANVAS_BLOCK = """        canvas.emscripten {
         canvas.emscripten:focus {
             outline: none;
         }
+
+        body.splash-active canvas.emscripten {
+            opacity: 0;
+        }
 """
 
 BODY_BLOCK = """        html,
@@ -148,6 +152,14 @@ FOCUS_JS = """        const blockedKeys = new Set([
             "P",
         ]);
 
+        const setSplashActive = () => {
+            document.body.classList.toggle("splash-active", !(window.MM && window.MM.UME));
+        };
+        const revealGameCanvas = () => {
+            document.body.classList.remove("splash-active");
+        };
+        setSplashActive();
+
         const focusCanvas = () => {
             canvas.setAttribute("tabindex", "0");
             if (typeof window.focus === "function") {
@@ -167,12 +179,14 @@ FOCUS_JS = """        const blockedKeys = new Set([
                 if (window.MM && !window.MM.UME) {
                     window.MM.UME = true;
                 }
+                revealGameCanvas();
             }, { passive: true });
             document.addEventListener(eventName, () => {
                 focusCanvas();
                 if (window.MM && !window.MM.UME) {
                     window.MM.UME = true;
                 }
+                revealGameCanvas();
             }, { passive: true });
         });
 
@@ -182,6 +196,7 @@ FOCUS_JS = """        const blockedKeys = new Set([
                 focusCanvas();
                 if ((event.key === " " || event.key === "Spacebar") && window.MM && !window.MM.UME) {
                     window.MM.UME = true;
+                    revealGameCanvas();
                 }
             }
         }, { capture: true });
@@ -240,7 +255,7 @@ def patch_index_html(html: str) -> str:
     html = replace_once(
         html,
         '    platform.document.body.style.background = "#7f7f7f"\n',
-        '    platform.document.body.style.background = "#091020"\n',
+        '    platform.document.body.style.background = ""\n',
     )
     html = replace_once(
         html,

@@ -23,7 +23,7 @@ from pathlib import Path
 # do not rename
 async def custom_site():
     import embed
-    platform.document.body.style.background = "#091020"
+    platform.document.body.style.background = ""
 
     platform.window.transfer.hidden = true
     platform.window.canvas.style.visibility = "visible"
@@ -285,6 +285,10 @@ function show_infobox() {
             outline: none;
         }
 
+        body.splash-active canvas.emscripten {
+            opacity: 0;
+        }
+
         html,
         body {
             width: 100%;
@@ -475,6 +479,14 @@ frameborder="1"
             "P",
         ]);
 
+        const setSplashActive = () => {
+            document.body.classList.toggle("splash-active", !(window.MM && window.MM.UME));
+        };
+        const revealGameCanvas = () => {
+            document.body.classList.remove("splash-active");
+        };
+        setSplashActive();
+
         const focusCanvas = () => {
             canvas.setAttribute("tabindex", "0");
             if (typeof window.focus === "function") {
@@ -494,12 +506,14 @@ frameborder="1"
                 if (window.MM && !window.MM.UME) {
                     window.MM.UME = true;
                 }
+                revealGameCanvas();
             }, { passive: true });
             document.addEventListener(eventName, () => {
                 focusCanvas();
                 if (window.MM && !window.MM.UME) {
                     window.MM.UME = true;
                 }
+                revealGameCanvas();
             }, { passive: true });
         });
 
@@ -509,6 +523,7 @@ frameborder="1"
                 focusCanvas();
                 if ((event.key === " " || event.key === "Spacebar") && window.MM && !window.MM.UME) {
                     window.MM.UME = true;
+                    revealGameCanvas();
                 }
             }
         }, { capture: true });
