@@ -153,12 +153,14 @@ class Player:
         )
         return bool(rect.clipline(line))
 
-    def update(self, dt, keys, speed_multiplier):
+    def update(self, dt, keys, speed_multiplier, touch_direction=0):
         direction = 0
         if keys[pygame.K_LEFT]:
             direction -= 1
         if keys[pygame.K_RIGHT]:
             direction += 1
+        direction += touch_direction
+        direction = max(-1, min(1, direction))
 
         if direction:
             self.facing = direction

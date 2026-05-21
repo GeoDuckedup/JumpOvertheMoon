@@ -335,6 +335,7 @@ class Renderer:
         hit_combo_streak,
         hit_combo_color,
         game_over,
+        mobile_controls_visible,
     ):
         height_text = self.font.render(f"height {best_height}m", True, WHITE)
         self.screen.blit(height_text, (18, 16))
@@ -355,8 +356,9 @@ class Renderer:
             pygame.draw.circle(self.screen, hit_combo_color, (dot_x, 76), 6)
             pygame.draw.circle(self.screen, WHITE, (dot_x, 76), 6, 1)
 
-        hint = self.small_font.render("arrows move   space jump/downslash   P speed ramp   esc quit", True, (232, 239, 234))
-        self.screen.blit(hint, (18, HEIGHT - 30))
+        if not mobile_controls_visible:
+            hint = self.small_font.render("arrows move   space jump/downslash   P speed ramp   esc quit", True, (232, 239, 234))
+            self.screen.blit(hint, (18, HEIGHT - 30))
 
         if game_over:
             overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
@@ -364,10 +366,85 @@ class Renderer:
             self.screen.blit(overlay, (0, 0))
             title = self.big_font.render("FALLEN", True, WHITE)
             score = self.font.render(f"best height: {best_height}m", True, WHITE)
-            retry = self.font.render("press R to climb again", True, (255, 219, 116))
+            retry_label = "tap action to climb again" if mobile_controls_visible else "press R to climb again"
+            retry = self.font.render(retry_label, True, (255, 219, 116))
             self.screen.blit(title, title.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 56)))
             self.screen.blit(score, score.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 2)))
             self.screen.blit(retry, retry.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 42)))
+
+    def arrow_points(self, rect, direction):
+        inset = max(18, rect.width // 3)
+        if direction < 0:
+            return [
+                (rect.left, rect.centery),
+                (rect.left + inset, rect.top),
+                (rect.right, rect.top),
+                (rect.right, rect.bottom),
+                (rect.left + inset, rect.bottom),
+            ]
+
+        return [
+            (rect.right, rect.centery),
+            (rect.right - inset, rect.top),
+            (rect.left, rect.top),
+            (rect.left, rect.bottom),
+            (rect.right - inset, rect.bottom),
+        ]
+
+    def draw_arrow_button(self, layer, rect, direction, pressed):
+        fill_alpha = MOBILE_CONTROL_PRESSED_ALPHA if pressed else MOBILE_CONTROL_ALPHA
+        fill = (15, 18, 27, fill_alpha)
+        border = (245, 245, 239, MOBILE_CONTROL_BORDER_ALPHA)
+        shadow_rect = rect.move(0, 5)
+        shadow_points = self.arrow_points(shadow_rect, direction)
+        pygame.draw.polygon(layer, (0, 0, 0, MOBILE_CONTROL_SHADOW_ALPHA), shadow_points)
+
+        points = self.arrow_points(rect, direction)
+        pygame.draw.polygon(layer, fill, points)
+        pygame.draw.lines(layer, border, True, points, 3)
+
+        notch = rect.width // 4
+        stem_left = rect.left + notch if direction < 0 else rect.left + rect.width // 5
+        stem_right = rect.right - rect.width // 5 if direction < 0 else rect.right - notch
+        pygame.draw.line(
+            layer,
+            (245, 245, 239, 110 if not pressed else 185),
+            (stem_left, rect.centery),
+            (stem_right, rect.centery),
+            5,
+        )
+
+    def draw_action_button(self, layer, rect, label, pressed):
+        fill_alpha = MOBILE_CONTROL_PRESSED_ALPHA if pressed else MOBILE_CONTROL_ALPHA
+        fill = (15, 18, 27, fill_alpha)
+        border = (245, 245, 239, MOBILE_CONTROL_BORDER_ALPHA)
+        shadow_rect = rect.move(0, 5)
+        pygame.draw.rect(layer, (0, 0, 0, MOBILE_CONTROL_SHADOW_ALPHA), shadow_rect, border_radius=28)
+        pygame.draw.rect(layer, fill, rect, border_radius=28)
+        pygame.draw.rect(layer, border, rect, 3, border_radius=28)
+        pygame.draw.circle(
+            layer,
+            (255, 236, 150, 150 if pressed else 95),
+            rect.center,
+            rect.width // 3,
+            3,
+        )
+
+        text = self.font.render(label, True, (255, 236, 150) if label == "SLASH" else WHITE)
+        layer.blit(text, text.get_rect(center=rect.center))
+
+    def draw_mobile_controls(self, player, game_over, control_rects, pressed_controls):
+        layer = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        self.draw_arrow_button(layer, control_rects["left"], -1, "left" in pressed_controls)
+        self.draw_arrow_button(layer, control_rects["right"], 1, "right" in pressed_controls)
+        if game_over:
+            action_label = "RETRY"
+        elif player.on_ground:
+            action_label = "JUMP"
+        else:
+            action_label = "SLASH"
+        self.draw_action_button(layer, control_rects["action"], action_label, "action" in pressed_controls)
+        self.screen.blit(layer, (0, 0))
 
     def draw(
         self,
@@ -386,6 +463,9 @@ class Renderer:
         game_over,
         hit_combo_streak,
         hit_combo_color,
+        mobile_controls_visible=False,
+        mobile_control_rects=None,
+        pressed_mobile_controls=None,
     ):
         self.draw_gradient(atmosphere)
         self.draw_stars(stars, camera_y, atmosphere)
@@ -404,5 +484,13 @@ class Renderer:
             hit_combo_streak,
             hit_combo_color,
             game_over,
+            mobile_controls_visible,
         )
+        if mobile_controls_visible and mobile_control_rects:
+            self.draw_mobile_controls(
+                player,
+                game_over,
+                mobile_control_rects,
+                pressed_mobile_controls or set(),
+            )
         pygame.display.flip()

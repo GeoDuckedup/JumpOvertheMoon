@@ -193,8 +193,7 @@ function show_infobox() {
     <title>Cow Sword Climb</title>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="viewport" content="height=device-height, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes"/>
 
@@ -270,8 +269,8 @@ function show_infobox() {
         canvas.emscripten {
             border: 0px none;
             background-color: transparent;
-            width: min(100vw, calc(100vh * 0.675));
-            height: min(100vh, calc(100vw / 0.675));
+            width: min(100dvw, calc(var(--app-height, 100dvh) * 0.675));
+            height: min(var(--app-height, 100dvh), calc(100dvw / 0.675));
             z-index: 5;
 
             padding: 0;
@@ -288,6 +287,19 @@ function show_infobox() {
             outline: none;
         }
 
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            height: var(--app-height, 100dvh);
+            overflow: hidden;
+            overscroll-behavior: none;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
         body {
             font-family: "Trebuchet MS", Verdana, sans-serif;
             margin: 0;
@@ -296,9 +308,8 @@ function show_infobox() {
                 radial-gradient(circle at 50% 20%, rgba(120, 217, 255, 0.22), transparent 34%),
                 linear-gradient(180deg, #091020 0%, #17284a 52%, #314f68 100%);
             color: #f6f7ef;
-            overflow: hidden;
-            overscroll-behavior: none;
-            touch-action: none;
+            position: fixed;
+            inset: 0;
         }
 
         .topright{
@@ -509,6 +520,27 @@ frameborder="1"
                 focusCanvas();
             }
         }, { capture: true });
+
+        const setAppHeight = () => {
+            const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            document.documentElement.style.setProperty("--app-height", `${viewportHeight}px`);
+        };
+        setAppHeight();
+        window.addEventListener("resize", setAppHeight);
+        window.addEventListener("orientationchange", setAppHeight);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener("resize", setAppHeight);
+            window.visualViewport.addEventListener("scroll", setAppHeight);
+        }
+
+        const preventBrowserGesture = (event) => {
+            event.preventDefault();
+        };
+        document.addEventListener("contextmenu", preventBrowserGesture, { capture: true });
+        document.addEventListener("touchmove", preventBrowserGesture, { passive: false });
+        ;["gesturestart", "gesturechange", "gestureend"].forEach((eventName) => {
+            window.addEventListener(eventName, preventBrowserGesture, { passive: false });
+        });
     }
 
     function custom_prerun(){

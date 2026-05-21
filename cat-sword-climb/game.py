@@ -31,9 +31,34 @@ class Game:
             self.balloon_sprites,
             self.goal_marker_sprites,
         )
+        self.mobile_controls_detected = self.detect_mobile_controls()
+        self.mobile_controls_forced = False
+        self.mobile_control_pointers = {}
         self.run_seed_rng = random.Random()
         self.running = True
         self.reset()
+
+    def detect_mobile_controls(self):
+        try:
+            import platform
+
+            window = platform.window
+            navigator = platform.window.navigator
+            if int(getattr(navigator, "maxTouchPoints", 0) or 0) > 0:
+                return True
+
+            user_agent = str(getattr(navigator, "userAgent", "")).lower()
+            mobile_tokens = ("android", "iphone", "ipad", "ipod", "mobile")
+            if any(token in user_agent for token in mobile_tokens):
+                return True
+
+            match_media = getattr(window, "matchMedia", None)
+            if match_media and match_media("(pointer: coarse)").matches:
+                return True
+        except Exception:
+            pass
+
+        return False
 
     def load_cat_sprites(self):
         sprites = {}
@@ -64,6 +89,7 @@ class Game:
         return sprites
 
     def reset(self):
+        self.mobile_control_pointers.clear()
         self.player = Player()
         self.camera_y = 0.0
         self.best_height = 0
@@ -144,6 +170,67 @@ class Game:
             if balloon.popped_timer < 0.35 and balloon.y < WORLD_FLOOR_Y + 220
         ]
 
+    def mobile_controls_visible(self):
+        return self.mobile_controls_detected or self.mobile_controls_forced
+
+    def mobile_control_rects(self):
+        y = HEIGHT - MOBILE_CONTROL_MARGIN - MOBILE_ARROW_H
+        left = pygame.Rect(
+            MOBILE_CONTROL_MARGIN,
+            y,
+            MOBILE_ARROW_W,
+            MOBILE_ARROW_H,
+        )
+        right = pygame.Rect(
+            left.right + MOBILE_ARROW_GAP,
+            y,
+            MOBILE_ARROW_W,
+            MOBILE_ARROW_H,
+        )
+        action = pygame.Rect(
+            WIDTH - MOBILE_CONTROL_MARGIN - MOBILE_ACTION_SIZE,
+            HEIGHT - MOBILE_CONTROL_MARGIN - MOBILE_ACTION_SIZE,
+            MOBILE_ACTION_SIZE,
+            MOBILE_ACTION_SIZE,
+        )
+        return {"left": left, "right": right, "action": action}
+
+    def mobile_control_at(self, pos):
+        for name, rect in self.mobile_control_rects().items():
+            if rect.collidepoint(pos):
+                return name
+        return None
+
+    def press_mobile_control(self, pointer_id, pos, trigger_action=True):
+        control = self.mobile_control_at(pos)
+        if not control:
+            return False
+
+        self.mobile_control_pointers[pointer_id] = control
+        if trigger_action and control == "action":
+            self.perform_action_button()
+        return True
+
+    def release_mobile_control(self, pointer_id):
+        self.mobile_control_pointers.pop(pointer_id, None)
+
+    def pressed_mobile_controls(self):
+        return set(self.mobile_control_pointers.values())
+
+    def touch_direction(self):
+        pressed = self.pressed_mobile_controls()
+        return int("right" in pressed) - int("left" in pressed)
+
+    def perform_action_button(self):
+        if self.game_over:
+            self.reset()
+            return
+
+        if self.player.on_ground:
+            self.player.jump()
+        else:
+            self.player.start_slash()
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -152,15 +239,36 @@ class Game:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
                 elif event.key == pygame.K_SPACE and not self.game_over:
-                    if self.player.on_ground:
-                        self.player.jump()
-                    else:
-                        self.player.start_slash()
+                    self.perform_action_button()
                 elif event.key == pygame.K_p:
                     self.speed_ramp_enabled = not self.speed_ramp_enabled
                     self.update_speed_multiplier()
+                elif event.key == pygame.K_m:
+                    self.mobile_controls_forced = not self.mobile_controls_forced
+                    if not self.mobile_controls_forced:
+                        self.mobile_control_pointers.clear()
                 elif event.key == pygame.K_r and self.game_over:
                     self.reset()
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.mobile_controls_visible():
+                    self.press_mobile_control("mouse", event.pos)
+            elif event.type == pygame.MOUSEMOTION and event.buttons[0]:
+                if "mouse" in self.mobile_control_pointers:
+                    self.release_mobile_control("mouse")
+                    self.press_mobile_control("mouse", event.pos, trigger_action=False)
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                self.release_mobile_control("mouse")
+            elif event.type == pygame.FINGERDOWN:
+                self.mobile_controls_detected = True
+                pos = (round(event.x * WIDTH), round(event.y * HEIGHT))
+                self.press_mobile_control(event.finger_id, pos)
+            elif event.type == pygame.FINGERUP:
+                self.release_mobile_control(event.finger_id)
+            elif event.type == pygame.FINGERMOTION:
+                if event.finger_id in self.mobile_control_pointers:
+                    self.release_mobile_control(event.finger_id)
+                    pos = (round(event.x * WIDTH), round(event.y * HEIGHT))
+                    self.press_mobile_control(event.finger_id, pos, trigger_action=False)
 
     def update_speed_multiplier(self):
         if not self.speed_ramp_enabled:
@@ -198,7 +306,7 @@ class Game:
             return
 
         keys = pygame.key.get_pressed()
-        self.player.update(dt, keys, self.speed_multiplier)
+        self.player.update(dt, keys, self.speed_multiplier, self.touch_direction())
 
         for balloon in self.balloons:
             balloon.wobble += dt * 4.0 * self.speed_multiplier
@@ -284,6 +392,9 @@ class Game:
             game_over=self.game_over,
             hit_combo_streak=self.hit_combo_streak,
             hit_combo_color=self.hit_combo_color,
+            mobile_controls_visible=self.mobile_controls_visible(),
+            mobile_control_rects=self.mobile_control_rects(),
+            pressed_mobile_controls=self.pressed_mobile_controls(),
         )
 
     def run_frame(self):

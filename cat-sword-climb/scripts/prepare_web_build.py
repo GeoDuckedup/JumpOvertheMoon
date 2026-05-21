@@ -86,8 +86,8 @@ INFOBOX_BLOCK = """        #infobox {
 CANVAS_BLOCK = """        canvas.emscripten {
             border: 0px none;
             background-color: transparent;
-            width: min(100vw, calc(100vh * 0.675));
-            height: min(100vh, calc(100vw / 0.675));
+            width: min(100dvw, calc(var(--app-height, 100dvh) * 0.675));
+            height: min(var(--app-height, 100dvh), calc(100dvw / 0.675));
             z-index: 5;
 
             padding: 0;
@@ -105,7 +105,20 @@ CANVAS_BLOCK = """        canvas.emscripten {
         }
 """
 
-BODY_BLOCK = """        body {
+BODY_BLOCK = """        html,
+        body {
+            width: 100%;
+            height: 100%;
+            height: var(--app-height, 100dvh);
+            overflow: hidden;
+            overscroll-behavior: none;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        body {
             font-family: "Trebuchet MS", Verdana, sans-serif;
             margin: 0;
             padding: 0;
@@ -113,9 +126,8 @@ BODY_BLOCK = """        body {
                 radial-gradient(circle at 50% 20%, rgba(120, 217, 255, 0.22), transparent 34%),
                 linear-gradient(180deg, #091020 0%, #17284a 52%, #314f68 100%);
             color: #f6f7ef;
-            overflow: hidden;
-            overscroll-behavior: none;
-            touch-action: none;
+            position: fixed;
+            inset: 0;
         }
 """
 
@@ -182,9 +194,31 @@ FOCUS_JS = """        const blockedKeys = new Set([
         }, { capture: true });
 """
 
+MOBILE_BROWSER_JS = """        const setAppHeight = () => {
+            const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            document.documentElement.style.setProperty("--app-height", `${viewportHeight}px`);
+        };
+        setAppHeight();
+        window.addEventListener("resize", setAppHeight);
+        window.addEventListener("orientationchange", setAppHeight);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener("resize", setAppHeight);
+            window.visualViewport.addEventListener("scroll", setAppHeight);
+        }
+
+        const preventBrowserGesture = (event) => {
+            event.preventDefault();
+        };
+        document.addEventListener("contextmenu", preventBrowserGesture, { capture: true });
+        document.addEventListener("touchmove", preventBrowserGesture, { passive: false });
+        ;["gesturestart", "gesturechange", "gestureend"].forEach((eventName) => {
+            window.addEventListener(eventName, preventBrowserGesture, { passive: false });
+        });
+"""
+
 
 def replace_once(text: str, old: str, new: str) -> str:
-    if new in text:
+    if new and new in text:
         return text
     if old not in text:
         raise RuntimeError(f"Expected snippet not found while patching:\n{old[:120]}")
@@ -193,6 +227,16 @@ def replace_once(text: str, old: str, new: str) -> str:
 
 def patch_index_html(html: str) -> str:
     html = replace_once(html, "<title>cat-sword-climb</title>", "<title>Cow Sword Climb</title>")
+    html = replace_once(
+        html,
+        '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n',
+        '    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">\n',
+    )
+    html = replace_once(
+        html,
+        '    <meta name="viewport" content="height=device-height, initial-scale=1.0">\n',
+        "",
+    )
     html = replace_once(
         html,
         '    platform.document.body.style.background = "#7f7f7f"\n',
@@ -279,7 +323,7 @@ def patch_index_html(html: str) -> str:
     html = replace_once(
         html,
         "        show_infobox()\n",
-        f"        show_infobox()\n\n{FOCUS_JS}",
+        f"        show_infobox()\n\n{FOCUS_JS}\n{MOBILE_BROWSER_JS}",
     )
     return html
 
