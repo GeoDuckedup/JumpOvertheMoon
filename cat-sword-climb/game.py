@@ -40,6 +40,7 @@ class Game:
         self.mobile_controls_forced = False
         self.mobile_control_pointers = {}
         self.mobile_action_ignore_until = 0
+        self.mobile_name_entry_action_ignore_until = 0
         self.mobile_mouse_ignore_until = 0
         self.run_seed_rng = random.Random()
         self.highscore_service = HighScoreService(Path(__file__).resolve().parent)
@@ -304,8 +305,17 @@ class Game:
             self.mobile_now_ms() + MOBILE_SYNTHETIC_MOUSE_SUPPRESS_MS,
         )
 
+    def suppress_mobile_name_entry_action(self):
+        self.mobile_name_entry_action_ignore_until = max(
+            self.mobile_name_entry_action_ignore_until,
+            self.mobile_now_ms() + MOBILE_NAME_ENTRY_ACTION_SUPPRESS_MS,
+        )
+
     def mobile_action_suppressed(self):
         return self.mobile_now_ms() < self.mobile_action_ignore_until
+
+    def mobile_name_entry_action_suppressed(self):
+        return self.mobile_now_ms() < self.mobile_name_entry_action_ignore_until
 
     def synthetic_mouse_suppressed(self):
         return self.mobile_now_ms() < self.mobile_mouse_ignore_until
@@ -345,6 +355,13 @@ class Game:
 
         if trigger_action and control == "action" and self.mobile_action_suppressed():
             return True
+        if (
+            trigger_action
+            and control == "action"
+            and self.highscore_entry_active()
+            and self.mobile_name_entry_action_suppressed()
+        ):
+            return True
 
         self.mobile_control_pointers[pointer_id] = control
         if trigger_action and self.highscore_entry_active():
@@ -372,6 +389,9 @@ class Game:
     def perform_action_button(self):
         if self.game_over:
             if self.highscore_entry_active():
+                self.suppress_mobile_name_entry_action()
+                self.suppress_mobile_action(MOBILE_NAME_ENTRY_ACTION_SUPPRESS_MS)
+                self.suppress_synthetic_mouse()
                 self.advance_name_entry()
                 return
 
@@ -528,6 +548,8 @@ class Game:
 
     def update(self, dt):
         self.highscore_service.tick()
+        if self.name_entry is not None:
+            self.name_entry.update(dt)
         self.update_shooting_stars(dt)
 
         if self.game_over:

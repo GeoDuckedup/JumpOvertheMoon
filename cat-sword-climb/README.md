@@ -47,7 +47,7 @@ Before enabling the in-game leaderboard code, set up Firebase manually:
         ".indexOn": ["score"],
         "$entry": {
           ".write": "!data.exists()",
-          ".validate": "newData.hasChildren(['initials', 'score', 'timestamp']) && newData.child('initials').isString() && newData.child('initials').val().matches(/^[A-Z0-9]{3}$/) && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 999999 && newData.child('timestamp').isNumber()"
+          ".validate": "newData.hasChildren(['initials', 'score', 'timestamp']) && newData.child('initials').isString() && newData.child('initials').val().matches(/^[A-Z0-9]{3}$/) && !newData.child('initials').val().matches(/^(ASS|FUK|FUC|FCK|SHT|SHI|DIK|DIQ|DIC|COK|COC|CUM|FAG|FAT|GAY|GOD|JEW|KKK|NIG|NGA|NGR|PIS|POO|SEX|TIT|TTS|WTF|STF|SUK|SUC|VAG|WOP|KYS|RAP|FKU|CNT|CUN|HOR|HO3|ANU|ANL|BUT|BUM|DAM|DMN|HEL|JIZ|KIK|PEN|PHK|SCK|SLT|SMD)$/) && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 999999 && newData.child('timestamp').isNumber()"
         }
       }
     }

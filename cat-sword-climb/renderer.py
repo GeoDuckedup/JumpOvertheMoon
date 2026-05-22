@@ -480,10 +480,14 @@ class Renderer:
 
     def draw_name_entry_panel(self, name_entry, best_height, mobile_controls_visible, highscore_service):
         panel_rect = pygame.Rect(42, 132, WIDTH - 84, 382)
-        self.draw_panel(panel_rect)
+        invalid = name_entry.invalid_flash_timer > 0
+        border = (214, 106, 97, 230) if invalid else (95, 201, 239, 210)
+        self.draw_panel(panel_rect, border=border)
         cx = WIDTH // 2
 
-        title = self.font.render("NEW HIGH SCORE", True, (255, 219, 116))
+        title_color = (214, 106, 97) if invalid else (255, 219, 116)
+        title_text = "TRY ANOTHER NAME" if invalid else "NEW HIGH SCORE"
+        title = self.font.render(title_text, True, title_color)
         score = self.small_font.render(f"height {best_height}m", True, (232, 239, 234))
         self.screen.blit(title, title.get_rect(center=(cx, panel_rect.y + 44)))
         self.screen.blit(score, score.get_rect(center=(cx, panel_rect.y + 76)))
@@ -512,23 +516,42 @@ class Renderer:
                     4,
                 )
 
-        prompt_text = (
-            "tap arrows to change letter"
-            if mobile_controls_visible
-            else "left/right or up/down changes letter"
-        )
-        confirm_text = (
-            "tap ENTER button to confirm"
-            if mobile_controls_visible
-            else "space or return confirms"
-        )
+        if name_entry.confirming:
+            prompt_text = "tap arrows to choose" if mobile_controls_visible else "arrows choose submit/redo"
+            confirm_text = "tap ENTER button to confirm" if mobile_controls_visible else "space confirms choice"
+        else:
+            prompt_text = (
+                "tap arrows to change letter"
+                if mobile_controls_visible
+                else "left/right or up/down changes letter"
+            )
+            confirm_text = "tap ENTER button to confirm" if mobile_controls_visible else "space or return confirms"
         prompt = self.small_font.render(prompt_text, True, (210, 222, 230))
         confirm = self.small_font.render(confirm_text, True, (210, 222, 230))
         self.screen.blit(prompt, prompt.get_rect(center=(cx, panel_rect.y + 270)))
         self.screen.blit(confirm, confirm.get_rect(center=(cx, panel_rect.y + 296)))
 
+        if name_entry.confirming:
+            submit_color = (255, 219, 116) if name_entry.confirm_choice == "submit" else (160, 181, 202)
+            redo_color = (255, 219, 116) if name_entry.confirm_choice == "redo" else (160, 181, 202)
+            submit = self.font.render("SUBMIT", True, submit_color)
+            redo = self.font.render("REDO", True, redo_color)
+            self.screen.blit(submit, submit.get_rect(center=(cx - 70, panel_rect.y + 338)))
+            self.screen.blit(redo, redo.get_rect(center=(cx + 70, panel_rect.y + 338)))
+            if name_entry.confirm_choice == "submit":
+                selected_rect = submit.get_rect(center=(cx - 70, panel_rect.y + 338))
+            else:
+                selected_rect = redo.get_rect(center=(cx + 70, panel_rect.y + 338))
+            pygame.draw.line(
+                self.screen,
+                (255, 219, 116),
+                (selected_rect.left + 4, selected_rect.bottom + 5),
+                (selected_rect.right - 4, selected_rect.bottom + 5),
+                3,
+            )
+
         status_text = self.highscore_status_text(highscore_service)
-        if status_text:
+        if status_text and not name_entry.confirming:
             status = self.small_font.render(status_text, True, (166, 218, 236))
             self.screen.blit(status, status.get_rect(center=(cx, panel_rect.y + 336)))
 
@@ -573,14 +596,6 @@ class Renderer:
         else:
             empty = self.small_font.render("no scores yet - be the first!", True, (210, 222, 230))
             self.screen.blit(empty, empty.get_rect(center=(cx, row_y + 28)))
-
-        if highscore_service:
-            local = self.small_font.render(
-                f"your best: {highscore_service.local_initials} {highscore_service.local_best}m",
-                True,
-                (210, 222, 230),
-            )
-            self.screen.blit(local, local.get_rect(center=(cx, panel_rect.bottom - 72)))
 
         retry_label = "tap action to climb again" if mobile_controls_visible else "press R to climb again"
         if status_text == "saving score...":
