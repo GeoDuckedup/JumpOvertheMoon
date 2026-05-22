@@ -15,6 +15,7 @@ class Renderer:
         cat_sprites,
         balloon_sprites,
         goal_marker_sprites,
+        reentry_sprites,
     ):
         self.screen = screen
         self.font = font
@@ -23,6 +24,7 @@ class Renderer:
         self.cat_sprites = cat_sprites
         self.balloon_sprites = balloon_sprites
         self.goal_marker_sprites = goal_marker_sprites
+        self.reentry_sprites = reentry_sprites
 
     def world_to_screen(self, x, y, camera_y):
         return int(x), int(y - camera_y)
@@ -389,6 +391,24 @@ class Renderer:
         rect = image.get_rect(center=(sx + ox, sy + oy))
         self.screen.blit(image, rect)
 
+    def draw_reentry_trail(self, player, camera_y, reentry_stage):
+        if reentry_stage <= 0 or player.on_ground or player.vy <= 0:
+            return
+        if not self.reentry_sprites:
+            return
+
+        sx, sy = self.world_to_screen(player.x, player.y, camera_y)
+        sprite = self.reentry_sprites.get(1)
+        if not sprite:
+            return
+
+        target_h = 160
+        scale = target_h / sprite.get_height()
+        target_w = max(1, round(sprite.get_width() * scale))
+        image = pygame.transform.smoothscale(sprite, (target_w, target_h))
+        rect = image.get_rect(midbottom=(sx, sy + 72))
+        self.screen.blit(image, rect)
+
     def draw_player(self, player, camera_y):
         if self.cat_sprites:
             self.draw_player_sprite(player, camera_y)
@@ -573,6 +593,7 @@ class Renderer:
         game_over,
         hit_combo_streak,
         hit_combo_color,
+        reentry_stage=0,
         mobile_controls_visible=False,
         mobile_control_rects=None,
         pressed_mobile_controls=None,
@@ -587,6 +608,7 @@ class Renderer:
         for balloon in balloons:
             self.draw_balloon(balloon, camera_y)
         self.draw_pop_particles(pops, camera_y)
+        self.draw_reentry_trail(player, camera_y, reentry_stage)
         self.draw_player(player, camera_y)
         self.draw_combo_feedback(combo_feedbacks, camera_y)
         self.draw_hud(

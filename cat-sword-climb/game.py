@@ -22,6 +22,7 @@ class Game:
         self.cat_sprites = self.load_cat_sprites()
         self.balloon_sprites = self.load_balloon_sprites()
         self.goal_marker_sprites = self.load_goal_marker_sprites()
+        self.reentry_sprites = self.load_reentry_sprites()
         self.renderer = Renderer(
             self.screen,
             self.font,
@@ -30,6 +31,7 @@ class Game:
             self.cat_sprites,
             self.balloon_sprites,
             self.goal_marker_sprites,
+            self.reentry_sprites,
         )
         self.mobile_controls_detected = self.detect_mobile_controls()
         self.mobile_controls_forced = False
@@ -90,6 +92,18 @@ class Game:
             return None
         return sprites
 
+    def load_reentry_sprites(self):
+        sprites = {}
+        try:
+            for phase, name in (
+                (1, "light"),
+            ):
+                path = ASSET_DIR / f"reentry_trail_{name}.png"
+                sprites[phase] = pygame.image.load(path).convert_alpha()
+        except (FileNotFoundError, pygame.error):
+            return None
+        return sprites
+
     def reset(self):
         self.mobile_control_pointers.clear()
         self.player = Player()
@@ -102,6 +116,8 @@ class Game:
         self.has_popped_balloon = False
         self.hit_combo_color = None
         self.hit_combo_streak = 0
+        self.fall_peak_height = 0.0
+        self.reentry_stage = 0
         self.combo_feedbacks = []
         self.pops = []
         self.clouds = self.make_clouds()
@@ -166,6 +182,27 @@ class Game:
     def atmosphere_amount(self):
         t = min(1.0, self.current_height() / ATMOSPHERE_FADE_HEIGHT)
         return t * t * (3 - 2 * t)
+
+    def update_reentry_state(self):
+        height = self.current_height()
+        if self.player.on_ground:
+            self.fall_peak_height = height
+            self.reentry_stage = 0
+            return
+
+        if self.player.vy <= 0:
+            self.fall_peak_height = max(self.fall_peak_height, height)
+            self.reentry_stage = 0
+            return
+
+        fall_distance = max(0.0, self.fall_peak_height - height)
+        if height < REENTRY_MIN_HEIGHT and self.reentry_stage == 0:
+            return
+        if self.player.vy < REENTRY_MIN_FALL_SPEED and self.reentry_stage == 0:
+            return
+
+        if fall_distance >= REENTRY_LIGHT_FALL_DISTANCE:
+            self.reentry_stage = max(self.reentry_stage, 1)
 
     def next_shooting_star_delay(self, height):
         interval = SHOOTING_STAR_INTERVALS[-1][2]
@@ -326,6 +363,22 @@ class Game:
         else:
             self.player.start_slash()
 
+    def debug_jump_to_altitude(self, height=DEBUG_ALTITUDE_JUMP_HEIGHT):
+        self.game_over = False
+        self.has_popped_balloon = True
+        self.player.x = WIDTH * 0.5
+        self.player.y = WORLD_FLOOR_Y - height * 10
+        self.player.vx = 0.0
+        self.player.vy = 0.0
+        self.player.on_ground = False
+        self.player.slash_timer = 0.0
+        self.camera_y = min(0.0, self.player.y - HEIGHT * 0.48)
+        self.best_height = max(self.best_height, round(height))
+        self.fall_peak_height = height
+        self.reentry_stage = 0
+        self.hit_pause_timer = 0.0
+        self.ensure_balloons()
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -342,6 +395,8 @@ class Game:
                     self.mobile_controls_forced = not self.mobile_controls_forced
                     if not self.mobile_controls_forced:
                         self.mobile_control_pointers.clear()
+                elif event.key == pygame.K_t:
+                    self.debug_jump_to_altitude()
                 elif event.key == pygame.K_r and self.game_over:
                     self.reset()
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -414,6 +469,7 @@ class Game:
 
         keys = pygame.key.get_pressed()
         self.player.update(dt, keys, self.speed_multiplier, self.touch_direction())
+        self.update_reentry_state()
 
         for balloon in self.balloons:
             balloon.wobble += dt * 4.0 * self.speed_multiplier
@@ -426,8 +482,10 @@ class Game:
                 if feedback_label:
                     self.combo_feedbacks.append(
                         ComboFeedback(balloon.x, balloon.y, balloon.color, feedback_label)
-                    )
+                )
                 self.player.bounce(speed_multiplier=self.speed_multiplier, speed=bounce_speed)
+                self.fall_peak_height = self.current_height()
+                self.reentry_stage = 0
                 self.hit_pause_timer = HIT_PAUSE_TIME
 
         for marker in self.goal_markers:
@@ -437,6 +495,8 @@ class Game:
                 self.has_popped_balloon = True
                 self.pops.append(Pop(marker.x, marker.y + marker.hit_offset_y, (245, 245, 226)))
                 self.player.bounce(speed_multiplier=self.speed_multiplier, speed=GOAL_BOUNCE_SPEED)
+                self.fall_peak_height = self.current_height()
+                self.reentry_stage = 0
                 self.hit_pause_timer = HIT_PAUSE_TIME
 
         for balloon in self.balloons:
@@ -503,6 +563,7 @@ class Game:
             game_over=self.game_over,
             hit_combo_streak=self.hit_combo_streak,
             hit_combo_color=self.hit_combo_color,
+            reentry_stage=self.reentry_stage,
             mobile_controls_visible=self.mobile_controls_visible(),
             mobile_control_rects=self.mobile_control_rects(),
             pressed_mobile_controls=self.pressed_mobile_controls(),

@@ -133,6 +133,10 @@ BODY_BLOCK = """        html,
             position: fixed;
             inset: 0;
         }
+
+        body.game-active {
+            background: #091020;
+        }
 """
 
 FOCUS_JS = """        const blockedKeys = new Set([
@@ -153,10 +157,13 @@ FOCUS_JS = """        const blockedKeys = new Set([
         ]);
 
         const setSplashActive = () => {
-            document.body.classList.toggle("splash-active", !(window.MM && window.MM.UME));
+            const isWaitingForStart = !(window.MM && window.MM.UME);
+            document.body.classList.toggle("splash-active", isWaitingForStart);
+            document.body.classList.toggle("game-active", !isWaitingForStart);
         };
         const revealGameCanvas = () => {
             document.body.classList.remove("splash-active");
+            document.body.classList.add("game-active");
         };
         setSplashActive();
 
