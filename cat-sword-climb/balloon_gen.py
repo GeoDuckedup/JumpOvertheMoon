@@ -10,8 +10,6 @@ class BalloonGenerator:
         self.goal_markers = goal_markers
         self.goal_marker_sprites = goal_marker_sprites
         self.last_balloon_x = WIDTH * 0.5
-        self.last_balloon_color = None
-        self.balloon_color_streak = 0
         self.next_balloon_y = WORLD_FLOOR_Y - 150
         self.goal_approach_marker_names = set()
 
@@ -49,27 +47,8 @@ class BalloonGenerator:
 
         return x
 
-    def record_balloon_color(self, color):
-        if color == self.last_balloon_color:
-            self.balloon_color_streak += 1
-        else:
-            self.last_balloon_color = color
-            self.balloon_color_streak = 1
-
     def choose_main_balloon_color(self):
-        choices = list(BALLOON_COLORS)
-        if self.last_balloon_color and self.balloon_color_streak >= 2:
-            choices = [color for color in choices if color != self.last_balloon_color]
-        elif (
-            self.last_balloon_color
-            and self.balloon_color_streak == 1
-            and self.rng.random() < COLOR_REPEAT_CHANCE
-        ):
-            choices = [self.last_balloon_color]
-
-        color = self.rng.choice(choices)
-        self.record_balloon_color(color)
-        return color
+        return self.rng.choice(BALLOON_COLORS)
 
     def choose_side_balloon_color(self):
         return self.rng.choice(BALLOON_COLORS)
