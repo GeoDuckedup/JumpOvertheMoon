@@ -47,6 +47,7 @@ class Game:
         self.name_entry = None
         self.name_entry_submitted = False
         self.highscore_entry_score = 0
+        self.name_entry_pressed_keys = set()
         self.running = True
         self.reset()
 
@@ -124,6 +125,7 @@ class Game:
         self.name_entry = None
         self.name_entry_submitted = False
         self.highscore_entry_score = 0
+        self.name_entry_pressed_keys.clear()
         self.has_popped_balloon = False
         self.hit_combo_color = None
         self.hit_combo_streak = 0
@@ -423,6 +425,7 @@ class Game:
         if self.should_enter_name_for_score(self.highscore_entry_score):
             self.name_entry = NameEntry(self.highscore_service.local_initials)
             self.name_entry_submitted = False
+            self.name_entry_pressed_keys = self.current_name_entry_arrow_keys()
 
     def submit_name_entry(self):
         if self.name_entry is None or self.name_entry_submitted:
@@ -442,9 +445,11 @@ class Game:
             return False
 
         if key in (pygame.K_LEFT, pygame.K_DOWN):
+            self.name_entry_pressed_keys.add(key)
             self.name_entry.cycle_letter(-1)
             return True
         if key in (pygame.K_RIGHT, pygame.K_UP):
+            self.name_entry_pressed_keys.add(key)
             self.name_entry.cycle_letter(1)
             return True
         if key in (pygame.K_SPACE, pygame.K_RETURN):
@@ -456,6 +461,25 @@ class Game:
         if key == pygame.K_r:
             return True
         return False
+
+    def current_name_entry_arrow_keys(self):
+        keys = pygame.key.get_pressed()
+        return {
+            key
+            for key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN)
+            if keys[key]
+        }
+
+    def update_name_entry_key_edges(self):
+        if not self.highscore_entry_active():
+            self.name_entry_pressed_keys.clear()
+            return
+
+        pressed = self.current_name_entry_arrow_keys()
+        for key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN):
+            if key in pressed and key not in self.name_entry_pressed_keys:
+                self.handle_name_entry_key(key)
+        self.name_entry_pressed_keys = pressed
 
     def debug_jump_to_altitude(self, height=DEBUG_ALTITUDE_JUMP_HEIGHT):
         self.game_over = False
@@ -553,6 +577,7 @@ class Game:
         self.update_shooting_stars(dt)
 
         if self.game_over:
+            self.update_name_entry_key_edges()
             for pop in self.pops:
                 pop.age += dt
             for feedback in self.combo_feedbacks:
