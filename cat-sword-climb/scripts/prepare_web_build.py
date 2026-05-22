@@ -137,6 +137,15 @@ BODY_BLOCK = """        html,
         body.game-active {
             background: #091020;
         }
+
+        @media (min-aspect-ratio: 4 / 3) {
+            body.splash-active {
+                background:
+                    linear-gradient(180deg, rgba(4, 7, 18, 0.12), rgba(4, 7, 18, 0.22)),
+                    url("splash_over_the_moon.png") center center / contain no-repeat,
+                    #050814;
+            }
+        }
 """
 
 FOCUS_JS = """        const blockedKeys = new Set([

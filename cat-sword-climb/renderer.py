@@ -455,6 +455,155 @@ class Renderer:
         pygame.draw.ellipse(self.screen, CAT_DARK, (sx - 18, sy + 18 + foot_offset, 15, 8))
         pygame.draw.ellipse(self.screen, CAT_DARK, (sx + 3, sy + 18 - foot_offset, 15, 8))
 
+    def draw_panel(self, rect, fill=(8, 12, 24, 210), border=(95, 201, 239, 210)):
+        shadow = pygame.Surface((rect.width + 8, rect.height + 8), pygame.SRCALPHA)
+        pygame.draw.rect(shadow, (0, 0, 0, 90), shadow.get_rect(), border_radius=22)
+        self.screen.blit(shadow, (rect.x - 4, rect.y + 10))
+
+        panel = pygame.Surface(rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(panel, fill, panel.get_rect(), border_radius=20)
+        pygame.draw.rect(panel, border, panel.get_rect(), width=3, border_radius=20)
+        self.screen.blit(panel, rect)
+
+    def highscore_status_text(self, highscore_service):
+        if highscore_service is None:
+            return ""
+        if highscore_service.status == highscore_service.STATUS_LOADING:
+            return "loading leaderboard..."
+        if highscore_service.status == highscore_service.STATUS_SUBMITTING:
+            return "saving score..."
+        if highscore_service.status == highscore_service.STATUS_SUBMITTED:
+            return "score saved"
+        if highscore_service.status == highscore_service.STATUS_ERROR:
+            return "offline - saved locally"
+        return ""
+
+    def draw_name_entry_panel(self, name_entry, best_height, mobile_controls_visible, highscore_service):
+        panel_rect = pygame.Rect(42, 132, WIDTH - 84, 382)
+        self.draw_panel(panel_rect)
+        cx = WIDTH // 2
+
+        title = self.font.render("NEW HIGH SCORE", True, (255, 219, 116))
+        score = self.small_font.render(f"height {best_height}m", True, (232, 239, 234))
+        self.screen.blit(title, title.get_rect(center=(cx, panel_rect.y + 44)))
+        self.screen.blit(score, score.get_rect(center=(cx, panel_rect.y + 76)))
+
+        slot_w = 76
+        slot_gap = 18
+        initials = name_entry.initials
+        total_w = len(initials) * slot_w + (len(initials) - 1) * slot_gap
+        start_x = cx - total_w // 2
+        slot_y = panel_rect.y + 126
+        for index, letter in enumerate(initials):
+            slot_rect = pygame.Rect(start_x + index * (slot_w + slot_gap), slot_y, slot_w, 92)
+            active = index == name_entry.slot
+            fill = (24, 32, 51) if active else (13, 18, 31)
+            border = (255, 219, 116) if active else (94, 116, 143)
+            pygame.draw.rect(self.screen, fill, slot_rect, border_radius=14)
+            pygame.draw.rect(self.screen, border, slot_rect, width=3, border_radius=14)
+            glyph = self.big_font.render(letter, True, WHITE)
+            self.screen.blit(glyph, glyph.get_rect(center=slot_rect.center))
+            if active:
+                pygame.draw.line(
+                    self.screen,
+                    (255, 219, 116),
+                    (slot_rect.left + 16, slot_rect.bottom + 14),
+                    (slot_rect.right - 16, slot_rect.bottom + 14),
+                    4,
+                )
+
+        prompt_text = (
+            "tap arrows to change letter"
+            if mobile_controls_visible
+            else "left/right or up/down changes letter"
+        )
+        confirm_text = (
+            "tap ENTER button to confirm"
+            if mobile_controls_visible
+            else "space or return confirms"
+        )
+        prompt = self.small_font.render(prompt_text, True, (210, 222, 230))
+        confirm = self.small_font.render(confirm_text, True, (210, 222, 230))
+        self.screen.blit(prompt, prompt.get_rect(center=(cx, panel_rect.y + 270)))
+        self.screen.blit(confirm, confirm.get_rect(center=(cx, panel_rect.y + 296)))
+
+        status_text = self.highscore_status_text(highscore_service)
+        if status_text:
+            status = self.small_font.render(status_text, True, (166, 218, 236))
+            self.screen.blit(status, status.get_rect(center=(cx, panel_rect.y + 336)))
+
+    def draw_leaderboard_panel(self, highscore_service, best_height, mobile_controls_visible):
+        panel_rect = pygame.Rect(36, 106, WIDTH - 72, 502)
+        self.draw_panel(panel_rect)
+        cx = WIDTH // 2
+
+        title = self.big_font.render("FALLEN", True, WHITE)
+        score = self.font.render(f"height {best_height}m", True, WHITE)
+        self.screen.blit(title, title.get_rect(center=(cx, panel_rect.y + 50)))
+        self.screen.blit(score, score.get_rect(center=(cx, panel_rect.y + 98)))
+
+        header = self.font.render("TOP CLIMBERS", True, (255, 219, 116))
+        self.screen.blit(header, header.get_rect(center=(cx, panel_rect.y + 146)))
+
+        status_text = self.highscore_status_text(highscore_service)
+        if status_text:
+            status = self.small_font.render(status_text, True, (166, 218, 236))
+            self.screen.blit(status, status.get_rect(center=(cx, panel_rect.y + 176)))
+
+        rows = highscore_service.top_scores if highscore_service else []
+        row_y = panel_rect.y + 204
+        row_h = 25
+        if rows:
+            for rank, entry in enumerate(rows[:10], start=1):
+                initials = str(entry.get("initials", "AAA"))[:3]
+                score_value = int(entry.get("score", 0))
+                is_local = (
+                    highscore_service
+                    and initials == highscore_service.local_initials
+                    and score_value == highscore_service.local_best
+                )
+                row_color = (255, 219, 116) if is_local else (232, 239, 234)
+                rank_text = self.small_font.render(f"{rank:>2}.", True, (160, 181, 202))
+                name_text = self.small_font.render(initials, True, row_color)
+                score_text = self.small_font.render(f"{score_value:>5}m", True, row_color)
+                self.screen.blit(rank_text, rank_text.get_rect(topright=(cx - 96, row_y)))
+                self.screen.blit(name_text, name_text.get_rect(topleft=(cx - 82, row_y)))
+                self.screen.blit(score_text, score_text.get_rect(topright=(cx + 116, row_y)))
+                row_y += row_h
+        else:
+            empty = self.small_font.render("no scores yet - be the first!", True, (210, 222, 230))
+            self.screen.blit(empty, empty.get_rect(center=(cx, row_y + 28)))
+
+        if highscore_service:
+            local = self.small_font.render(
+                f"your best: {highscore_service.local_initials} {highscore_service.local_best}m",
+                True,
+                (210, 222, 230),
+            )
+            self.screen.blit(local, local.get_rect(center=(cx, panel_rect.bottom - 72)))
+
+        retry_label = "tap action to climb again" if mobile_controls_visible else "press R to climb again"
+        if status_text == "saving score...":
+            retry_label = "saving score..."
+        retry = self.font.render(retry_label, True, (255, 219, 116))
+        self.screen.blit(retry, retry.get_rect(center=(cx, panel_rect.bottom - 34)))
+
+    def draw_game_over_overlay(self, best_height, mobile_controls_visible, name_entry, highscore_service):
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((5, 8, 17, 184))
+        self.screen.blit(overlay, (0, 0))
+
+        if name_entry is not None and not name_entry.done:
+            self.draw_name_entry_panel(
+                name_entry,
+                best_height,
+                mobile_controls_visible,
+                highscore_service,
+            )
+            return
+
+        self.draw_leaderboard_panel(highscore_service, best_height, mobile_controls_visible)
+
     def draw_hud(
         self,
         best_height,
@@ -464,6 +613,8 @@ class Renderer:
         hit_combo_color,
         game_over,
         mobile_controls_visible,
+        name_entry=None,
+        highscore_service=None,
     ):
         height_text = self.font.render(f"height {best_height}m", True, WHITE)
         self.screen.blit(height_text, (18, 16))
@@ -489,16 +640,12 @@ class Renderer:
             self.screen.blit(hint, (18, HEIGHT - 30))
 
         if game_over:
-            overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-            overlay.fill((14, 15, 22, 170))
-            self.screen.blit(overlay, (0, 0))
-            title = self.big_font.render("FALLEN", True, WHITE)
-            score = self.font.render(f"best height: {best_height}m", True, WHITE)
-            retry_label = "tap action to climb again" if mobile_controls_visible else "press R to climb again"
-            retry = self.font.render(retry_label, True, (255, 219, 116))
-            self.screen.blit(title, title.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 56)))
-            self.screen.blit(score, score.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 2)))
-            self.screen.blit(retry, retry.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 42)))
+            self.draw_game_over_overlay(
+                best_height,
+                mobile_controls_visible,
+                name_entry,
+                highscore_service,
+            )
 
     def arrow_points(self, rect, direction):
         inset = max(18, rect.width // 3)
@@ -561,11 +708,13 @@ class Renderer:
         text = self.font.render(label, True, (255, 236, 150) if label == "SLASH" else WHITE)
         layer.blit(text, text.get_rect(center=rect.center))
 
-    def draw_mobile_controls(self, player, game_over, control_rects, pressed_controls):
+    def draw_mobile_controls(self, player, game_over, control_rects, pressed_controls, name_entry=None):
         layer = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
         self.draw_arrow_button(layer, control_rects["left"], -1, "left" in pressed_controls)
         self.draw_arrow_button(layer, control_rects["right"], 1, "right" in pressed_controls)
-        if game_over:
+        if name_entry is not None and not name_entry.done:
+            action_label = "ENTER"
+        elif game_over:
             action_label = "RETRY"
         elif player.on_ground:
             action_label = "JUMP"
@@ -597,6 +746,8 @@ class Renderer:
         mobile_controls_visible=False,
         mobile_control_rects=None,
         pressed_mobile_controls=None,
+        name_entry=None,
+        highscore_service=None,
     ):
         self.draw_gradient(height)
         self.draw_nebula(camera_y, height)
@@ -619,6 +770,8 @@ class Renderer:
             hit_combo_color,
             game_over,
             mobile_controls_visible,
+            name_entry,
+            highscore_service,
         )
         if mobile_controls_visible and mobile_control_rects:
             self.draw_mobile_controls(
@@ -626,5 +779,6 @@ class Renderer:
                 game_over,
                 mobile_control_rects,
                 pressed_mobile_controls or set(),
+                name_entry,
             )
         pygame.display.flip()

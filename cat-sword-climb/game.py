@@ -1,12 +1,15 @@
 import asyncio
 import math
 import random
+from pathlib import Path
 
 import pygame
 
 from balloon_gen import BalloonGenerator
 from constants import *
 from entities import *
+from highscore import HighScoreService
+from name_entry import NameEntry
 from renderer import Renderer
 
 
@@ -39,6 +42,10 @@ class Game:
         self.mobile_action_ignore_until = 0
         self.mobile_mouse_ignore_until = 0
         self.run_seed_rng = random.Random()
+        self.highscore_service = HighScoreService(Path(__file__).resolve().parent)
+        self.name_entry = None
+        self.name_entry_submitted = False
+        self.highscore_entry_score = 0
         self.running = True
         self.reset()
 
@@ -113,6 +120,9 @@ class Game:
         self.speed_ramp_enabled = True
         self.hit_pause_timer = 0.0
         self.game_over = False
+        self.name_entry = None
+        self.name_entry_submitted = False
+        self.highscore_entry_score = 0
         self.has_popped_balloon = False
         self.hit_combo_color = None
         self.hit_combo_streak = 0
@@ -337,6 +347,14 @@ class Game:
             return True
 
         self.mobile_control_pointers[pointer_id] = control
+        if trigger_action and self.highscore_entry_active():
+            if control == "left":
+                self.name_entry.cycle_letter(-1)
+                return True
+            if control == "right":
+                self.name_entry.cycle_letter(1)
+                return True
+
         if trigger_action and control == "action":
             self.perform_action_button()
         return True
@@ -353,6 +371,10 @@ class Game:
 
     def perform_action_button(self):
         if self.game_over:
+            if self.highscore_entry_active():
+                self.advance_name_entry()
+                return
+
             self.suppress_mobile_action()
             self.suppress_synthetic_mouse()
             self.reset()
@@ -362,6 +384,58 @@ class Game:
             self.player.jump()
         else:
             self.player.start_slash()
+
+    def highscore_entry_active(self):
+        return self.name_entry is not None and not self.name_entry.done
+
+    def should_enter_name_for_score(self, score):
+        if score <= 0:
+            return False
+        return (
+            self.highscore_service.is_new_local_best(score)
+            or self.highscore_service.qualifies_for_leaderboard(score)
+        )
+
+    def enter_game_over(self):
+        self.game_over = True
+        self.highscore_entry_score = self.best_height
+        self.highscore_service.request_refresh(force=True)
+        if self.should_enter_name_for_score(self.highscore_entry_score):
+            self.name_entry = NameEntry(self.highscore_service.local_initials)
+            self.name_entry_submitted = False
+
+    def submit_name_entry(self):
+        if self.name_entry is None or self.name_entry_submitted:
+            return
+        self.highscore_service.submit(self.name_entry.initials, self.highscore_entry_score)
+        self.name_entry_submitted = True
+
+    def advance_name_entry(self):
+        if self.name_entry is None:
+            return
+        self.name_entry.advance()
+        if self.name_entry.done:
+            self.submit_name_entry()
+
+    def handle_name_entry_key(self, key):
+        if not self.highscore_entry_active():
+            return False
+
+        if key in (pygame.K_LEFT, pygame.K_DOWN):
+            self.name_entry.cycle_letter(-1)
+            return True
+        if key in (pygame.K_RIGHT, pygame.K_UP):
+            self.name_entry.cycle_letter(1)
+            return True
+        if key in (pygame.K_SPACE, pygame.K_RETURN):
+            self.advance_name_entry()
+            return True
+        if key == pygame.K_BACKSPACE:
+            self.name_entry.backspace()
+            return True
+        if key == pygame.K_r:
+            return True
+        return False
 
     def debug_jump_to_altitude(self, height=DEBUG_ALTITUDE_JUMP_HEIGHT):
         self.game_over = False
@@ -386,6 +460,8 @@ class Game:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
+                elif self.handle_name_entry_key(event.key):
+                    pass
                 elif event.key == pygame.K_SPACE and not self.game_over:
                     self.perform_action_button()
                 elif event.key == pygame.K_p:
@@ -451,6 +527,7 @@ class Game:
         return BOUNCE_SPEED, None
 
     def update(self, dt):
+        self.highscore_service.tick()
         self.update_shooting_stars(dt)
 
         if self.game_over:
@@ -530,7 +607,7 @@ class Game:
         self.ensure_balloons()
 
         if self.has_popped_balloon and self.player.on_ground and self.player_on_world_floor():
-            self.game_over = True
+            self.enter_game_over()
 
     def player_on_world_floor(self):
         floor_player_y = WORLD_FLOOR_Y - CAT_H * 0.5
@@ -567,6 +644,8 @@ class Game:
             mobile_controls_visible=self.mobile_controls_visible(),
             mobile_control_rects=self.mobile_control_rects(),
             pressed_mobile_controls=self.pressed_mobile_controls(),
+            name_entry=self.name_entry,
+            highscore_service=self.highscore_service,
         )
 
     def run_frame(self):

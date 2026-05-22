@@ -22,6 +22,49 @@ python3 -m pip install -r requirements.txt
 
 This runs pygbag and copies the generated browser build to the repo-root `docs/` and `web/` folders. Use `docs/` for GitHub Pages.
 
+## High Scores
+
+The planned shared leaderboard uses Firebase Realtime Database through its REST API so it can work in both desktop Python and the pygbag web build. Scores will live in the Firebase project `over-the-moon-14b50` under this path:
+
+```text
+/jumpoverthemoon/scores
+```
+
+Before enabling the in-game leaderboard code, set up Firebase manually:
+
+1. Open Firebase Console -> Realtime Database -> Data.
+2. Copy the exact database URL shown at the top of the data view. It should look like either `https://over-the-moon-14b50-default-rtdb.firebaseio.com` or `https://over-the-moon-14b50-default-rtdb.<region>.firebasedatabase.app`.
+3. Open Realtime Database -> Rules.
+4. Replace the locked starter rules with the scoped rules below.
+5. Click Publish.
+
+```json
+{
+  "rules": {
+    "jumpoverthemoon": {
+      "scores": {
+        ".read": true,
+        ".indexOn": ["score"],
+        "$entry": {
+          ".write": "!data.exists()",
+          ".validate": "newData.hasChildren(['initials', 'score', 'timestamp']) && newData.child('initials').isString() && newData.child('initials').val().matches(/^[A-Z0-9]{3}$/) && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 999999 && newData.child('timestamp').isNumber()"
+        }
+      }
+    }
+  }
+}
+```
+
+These rules intentionally keep the rest of the database locked while allowing the game to create leaderboard entries and read the top scores. This is still an honor-system leaderboard: validation prevents malformed records and overwrites, but it does not prevent a technical player from submitting fake scores. A stricter version would require Firebase Auth, App Check, or a Cloud Function, which is a later-phase tradeoff.
+
+After publishing the rules, test the REST endpoint in a browser:
+
+```text
+https://YOUR_DATABASE_URL/jumpoverthemoon/scores.json
+```
+
+An empty leaderboard should return `null`. A permission error means the rules are still locked or the URL/path is wrong.
+
 ## Controls
 
 - Left/right arrows: move
