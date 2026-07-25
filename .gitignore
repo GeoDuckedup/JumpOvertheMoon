@@ -7,3 +7,4 @@ env/
 .env
 cat-sword-climb/build/
 cat-sword-climb/highscore_cache.json
+release/

@@ -1,0 +1,1844 @@
+{
+  "assets": [
+    {
+      "active": true,
+      "bytes": 14751,
+      "height": 180,
+      "path": "cat-sword-climb/assets/balloon_blue.png",
+      "sha256": "91e9e699b2aeb88af83aa18bcc243f99682d0278f9eb69d22964512f6c5498a1",
+      "width": 96
+    },
+    {
+      "active": true,
+      "bytes": 6790,
+      "height": 180,
+      "path": "cat-sword-climb/assets/balloon_green.png",
+      "sha256": "581485101015ecb686e947f63eacd5b2bd72d32c3753b3298bd7f6044b459ef1",
+      "width": 96
+    },
+    {
+      "active": false,
+      "bytes": 16030,
+      "height": 180,
+      "path": "cat-sword-climb/assets/balloon_purple.png",
+      "sha256": "3ca28aa8a699815111da842c41c518cc929d6e2ed9ab713e206342d7692bef24",
+      "width": 96
+    },
+    {
+      "active": true,
+      "bytes": 15713,
+      "height": 180,
+      "path": "cat-sword-climb/assets/balloon_red.png",
+      "sha256": "5c17064526872376c4a8cda60ad3334e33d52c21ad125e969e2c0bf823476aa1",
+      "width": 96
+    },
+    {
+      "active": true,
+      "bytes": 15010,
+      "height": 180,
+      "path": "cat-sword-climb/assets/balloon_yellow.png",
+      "sha256": "73ede60c7584adfa6a3175e3e148f0c4e724bdfa049ef31294b233d3c55db4fd",
+      "width": 96
+    },
+    {
+      "active": true,
+      "bytes": 259078,
+      "height": 433,
+      "path": "cat-sword-climb/assets/cat_fall.png",
+      "sha256": "0b941ffb4a222026ea1de49965000d5b33459e803e5ec58e6ce743c22d6c2073",
+      "width": 443
+    },
+    {
+      "active": true,
+      "bytes": 244394,
+      "height": 405,
+      "path": "cat-sword-climb/assets/cat_idle.png",
+      "sha256": "60f28ed702ba25a90510e0151a5baa4f212fbf4b6bb7a678f3defa812376a39a",
+      "width": 522
+    },
+    {
+      "active": true,
+      "bytes": 255641,
+      "height": 503,
+      "path": "cat-sword-climb/assets/cat_jump.png",
+      "sha256": "17a043507ce11071cb1e56175e217b089665f91a1237532ca3e240ccaeef5e35",
+      "width": 394
+    },
+    {
+      "active": true,
+      "bytes": 247988,
+      "height": 484,
+      "path": "cat-sword-climb/assets/cat_slash.png",
+      "sha256": "2a8f077550246039c18fba6c56fdb6f0b23425dc3f66b22491f8c9b5de2df8ac",
+      "width": 460
+    },
+    {
+      "active": false,
+      "bytes": 851382,
+      "height": 793,
+      "path": "cat-sword-climb/assets/cat_sprites.png",
+      "sha256": "6ce78d33121d51c644c56bf9a08779535618078886bf4882432e2c579d702290",
+      "width": 1983
+    },
+    {
+      "active": false,
+      "bytes": 1539729,
+      "height": 793,
+      "path": "cat-sword-climb/assets/cat_sprites_chroma.png",
+      "sha256": "ec91c7d5b6f9ad9d4b9ce5f68b207cfa419d1be8419e3671b032633d83c3f8e7",
+      "width": 1983
+    },
+    {
+      "active": true,
+      "bytes": 50075,
+      "height": 127,
+      "path": "cat-sword-climb/assets/goal_airplane.png",
+      "sha256": "94920090b9485e74a47996145448da1bdac8d051ba7448cd7f6f5c9a4561e3f8",
+      "width": 320
+    },
+    {
+      "active": true,
+      "bytes": 89988,
+      "height": 230,
+      "path": "cat-sword-climb/assets/goal_jupiter.png",
+      "sha256": "0d2e1a71b8c4ef512793703f8eb57226573f9b2db67deb8f80937b0ee271fdb9",
+      "width": 340
+    },
+    {
+      "active": true,
+      "bytes": 71238,
+      "height": 210,
+      "path": "cat-sword-climb/assets/goal_mars.png",
+      "sha256": "cb05f4811d7ae3a2f636d49e1d5fcb559995ca4c0cd62689a11af1e6a0fa1a55",
+      "width": 320
+    },
+    {
+      "active": true,
+      "bytes": 72704,
+      "height": 210,
+      "path": "cat-sword-climb/assets/goal_moon.png",
+      "sha256": "e30d5d2710ad396ced6cf3f11e616efa65a279c5588dcf941c5feca638961661",
+      "width": 320
+    },
+    {
+      "active": true,
+      "bytes": 51469,
+      "height": 210,
+      "path": "cat-sword-climb/assets/goal_neptune.png",
+      "sha256": "e56329b67919132181ba589c2d2a3ecc75b534ae9cbbb47c39c3a41945cbeab7",
+      "width": 320
+    },
+    {
+      "active": true,
+      "bytes": 79248,
+      "height": 230,
+      "path": "cat-sword-climb/assets/goal_saturn.png",
+      "sha256": "268096bfa23edce4c4096cae0ecd86c03156d9566ff38582fefd9df7d71c24bc",
+      "width": 360
+    },
+    {
+      "active": true,
+      "bytes": 90946,
+      "height": 190,
+      "path": "cat-sword-climb/assets/goal_station.png",
+      "sha256": "19ee1c863ad808a750a715a810752c6f4a11a467a055e546ba5e53daf2df5f17",
+      "width": 320
+    },
+    {
+      "active": true,
+      "bytes": 48000,
+      "height": 210,
+      "path": "cat-sword-climb/assets/goal_uranus.png",
+      "sha256": "b595ea9aee73a989978b0be4ca6002f448c1a187286eea0223cca9035e2bc707",
+      "width": 320
+    },
+    {
+      "active": true,
+      "bytes": 1071741,
+      "height": 1254,
+      "path": "cat-sword-climb/assets/reentry_trail_light.png",
+      "sha256": "e51d5009d8411c5e1fe1976d363bbd3de75c813be69e9b4d6681c55ccefe4cd9",
+      "width": 1254
+    },
+    {
+      "active": true,
+      "bytes": 2929053,
+      "height": 1537,
+      "path": "cat-sword-climb/assets/splash_over_the_moon.png",
+      "sha256": "061a2fc8b7ee030e063e001f95815b4e4c30f1ad4a88c7824f6f312a95fe79b8",
+      "width": 1023
+    }
+  ],
+  "browser_captures": [
+    {
+      "console_errors": [
+        {
+          "text": "** MEDIA USER ACTION REQUIRED [1] **",
+          "type": "console.error"
+        },
+        {
+          "text": "PyMain: BrowserFS not found",
+          "type": "console.error"
+        }
+      ],
+      "errors_file": {
+        "bytes": 171,
+        "path": "html-remake/reference/screenshots/browser-splash/errors-0.json",
+        "sha256": "8adc191a69cea1ec10ba68d330ac79ffdaeec1858de419e692932fd3961611d9"
+      },
+      "name": "browser-splash",
+      "screenshot": {
+        "bytes": 693078,
+        "path": "html-remake/reference/screenshots/browser-splash/shot-0.png",
+        "sha256": "2054cf32844b8472676bacb09e50441a28982f5913f523f04d846de5fce562d1"
+      }
+    },
+    {
+      "console_errors": [
+        {
+          "text": "** MEDIA USER ACTION REQUIRED [1] **",
+          "type": "console.error"
+        },
+        {
+          "text": "PyMain: BrowserFS not found",
+          "type": "console.error"
+        }
+      ],
+      "errors_file": {
+        "bytes": 171,
+        "path": "html-remake/reference/screenshots/browser-gameplay/errors-0.json",
+        "sha256": "8adc191a69cea1ec10ba68d330ac79ffdaeec1858de419e692932fd3961611d9"
+      },
+      "name": "browser-gameplay",
+      "screenshot": {
+        "bytes": 63693,
+        "path": "html-remake/reference/screenshots/browser-gameplay/shot-0.png",
+        "sha256": "3a08a914f4e3b3fd161ad84775f35606d8e1275245b8dcc33686f58eb817007d"
+      }
+    }
+  ],
+  "browser_release_files": [
+    {
+      "bytes": 18164,
+      "path": "docs/index.html",
+      "sha256": "e0126845381ec7a8131ebd2de4db1cb4c29d14079d453e697e349347916a90ba"
+    },
+    {
+      "bytes": 5653022,
+      "path": "docs/cat-sword-climb.tar.gz",
+      "sha256": "ef18e729f4904126402f5423817e69750b48187a733a290b9f0d1424efb7f3ea"
+    },
+    {
+      "bytes": 5655911,
+      "path": "docs/cat-sword-climb.apk",
+      "sha256": "792871d42a4e8a6b136911f923753ad5942fb6c18b271208d6ea8708fb6cb583"
+    },
+    {
+      "bytes": 2929053,
+      "path": "docs/splash_over_the_moon.png",
+      "sha256": "061a2fc8b7ee030e063e001f95815b4e4c30f1ad4a88c7824f6f312a95fe79b8"
+    }
+  ],
+  "characterization": {
+    "combo": {
+      "break_result": 1,
+      "combo_height_multiplier": 1.75,
+      "combo_speed": 1217.0456,
+      "match_height_multiplier": 1.25,
+      "match_speed": 1028.5913,
+      "reward_labels": [
+        null,
+        "match!",
+        "combo!",
+        "combo!"
+      ],
+      "sequence_same_color": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "state_after_break": [
+        1,
+        1
+      ],
+      "state_after_five": [
+        0,
+        5
+      ]
+    },
+    "fingerprint": "fd5e6dd79d43298cd9c592c362c9c4a92bff0b532536c0f5049a29ed70d97546",
+    "generator_has_scheduler_state": false,
+    "goal_sprite_keys": [
+      "airplane",
+      "jupiter",
+      "mars",
+      "moon",
+      "neptune",
+      "saturn",
+      "station",
+      "uranus"
+    ],
+    "markers": [
+      {
+        "asset": "airplane",
+        "height": 380,
+        "name": "Prop Plane"
+      },
+      {
+        "asset": "station",
+        "height": 1133,
+        "name": "Space Station"
+      },
+      {
+        "asset": "moon",
+        "height": 1980,
+        "name": "Moon"
+      },
+      {
+        "asset": "mars",
+        "height": 2921,
+        "name": "Mars"
+      },
+      {
+        "asset": "jupiter",
+        "height": 3932,
+        "name": "Jupiter"
+      },
+      {
+        "asset": "saturn",
+        "height": 4991,
+        "name": "Saturn"
+      },
+      {
+        "asset": "uranus",
+        "height": 6120,
+        "name": "Uranus"
+      },
+      {
+        "asset": "neptune",
+        "height": 7320,
+        "name": "Neptune"
+      }
+    ],
+    "seeds": [
+      {
+        "approach_gaps": {
+          "Jupiter": {
+            "dx": 3.0,
+            "gap": 42.0
+          },
+          "Mars": {
+            "dx": 53.0,
+            "gap": 39.0
+          },
+          "Moon": {
+            "dx": 3.0,
+            "gap": 42.0
+          },
+          "Neptune": {
+            "dx": 6.0,
+            "gap": 42.0
+          },
+          "Prop Plane": {
+            "dx": 16.0,
+            "gap": 30.0
+          },
+          "Saturn": {
+            "dx": 18.0,
+            "gap": 42.0
+          },
+          "Space Station": {
+            "dx": 35.0,
+            "gap": 42.0
+          },
+          "Uranus": {
+            "dx": 22.0,
+            "gap": 42.0
+          }
+        },
+        "balloon_count": 645,
+        "clearance_violations": [],
+        "main_count": 487,
+        "sample": [
+          {
+            "color": 0,
+            "radius": 31,
+            "role": "main",
+            "x": 146.0,
+            "y": 510.0
+          },
+          {
+            "color": 1,
+            "radius": 22,
+            "role": "side",
+            "x": 343,
+            "y": 490.0
+          },
+          {
+            "color": 1,
+            "radius": 31,
+            "role": "main",
+            "x": 110.0,
+            "y": 389.0
+          },
+          {
+            "color": 1,
+            "radius": 30,
+            "role": "main",
+            "x": 82.0,
+            "y": 228.0
+          },
+          {
+            "color": 3,
+            "radius": 29,
+            "role": "main",
+            "x": 113.0,
+            "y": 62.0
+          },
+          {
+            "color": 1,
+            "radius": 29,
+            "role": "main",
+            "x": 207.0,
+            "y": -99.0
+          },
+          {
+            "color": 1,
+            "radius": 31,
+            "role": "main",
+            "x": 348.0,
+            "y": -216.0
+          },
+          {
+            "color": 2,
+            "radius": 25,
+            "role": "main",
+            "x": 246.0,
+            "y": -382.0
+          },
+          {
+            "color": 3,
+            "radius": 31,
+            "role": "side",
+            "x": 110,
+            "y": -418.0
+          },
+          {
+            "color": 1,
+            "radius": 29,
+            "role": "main",
+            "x": 192.0,
+            "y": -508.0
+          },
+          {
+            "color": 1,
+            "radius": 26,
+            "role": "main",
+            "x": 63.0,
+            "y": -680.0
+          },
+          {
+            "color": 1,
+            "radius": 31,
+            "role": "main",
+            "x": 126,
+            "y": -828.0
+          },
+          {
+            "color": 2,
+            "radius": 33,
+            "role": "main",
+            "x": 135,
+            "y": -961.0
+          },
+          {
+            "color": 3,
+            "radius": 33,
+            "role": "main",
+            "x": 140,
+            "y": -1118.0
+          },
+          {
+            "color": 3,
+            "radius": 27,
+            "role": "main",
+            "x": 167,
+            "y": -1296.0
+          },
+          {
+            "color": 0,
+            "radius": 24,
+            "role": "main",
+            "x": 91,
+            "y": -1417.0
+          },
+          {
+            "color": 1,
+            "radius": 22,
+            "role": "side",
+            "x": 265,
+            "y": -1421.0
+          },
+          {
+            "color": 1,
+            "radius": 27,
+            "role": "main",
+            "x": 117,
+            "y": -1581.0
+          },
+          {
+            "color": 2,
+            "radius": 23,
+            "role": "main",
+            "x": 98,
+            "y": -1722.0
+          },
+          {
+            "color": 1,
+            "radius": 22,
+            "role": "side",
+            "x": 287,
+            "y": -1738.0
+          },
+          {
+            "color": 2,
+            "radius": 33,
+            "role": "main",
+            "x": 101,
+            "y": -1900.0
+          },
+          {
+            "color": 1,
+            "radius": 30,
+            "role": "main",
+            "x": 152,
+            "y": -2071.0
+          },
+          {
+            "color": 2,
+            "radius": 28,
+            "role": "side",
+            "x": 360,
+            "y": -2063.0
+          },
+          {
+            "color": 1,
+            "radius": 30,
+            "role": "main",
+            "x": 95,
+            "y": -2247.0
+          },
+          {
+            "color": 1,
+            "radius": 24,
+            "role": "side",
+            "x": 294,
+            "y": -2248.0
+          },
+          {
+            "color": 1,
+            "radius": 33,
+            "role": "main",
+            "x": 244,
+            "y": -2375.0
+          },
+          {
+            "color": 0,
+            "radius": 33,
+            "role": "main",
+            "x": 372,
+            "y": -2502.0
+          },
+          {
+            "color": 0,
+            "radius": 28,
+            "role": "main",
+            "x": 436,
+            "y": -2671.0
+          },
+          {
+            "color": 3,
+            "radius": 31,
+            "role": "main",
+            "x": 369,
+            "y": -2826.0
+          },
+          {
+            "color": 3,
+            "radius": 27,
+            "role": "main",
+            "x": 286,
+            "y": -2983.0
+          },
+          {
+            "color": 0,
+            "radius": 31,
+            "role": "side",
+            "x": 431,
+            "y": -2941.0
+          },
+          {
+            "color": 0,
+            "radius": 31,
+            "role": "main",
+            "x": 288.0,
+            "y": -2971.0
+          }
+        ],
+        "seed": 101,
+        "side_color_matches": {
+          "matches": 46,
+          "ratio": 0.291,
+          "total": 158
+        },
+        "side_combo_shapes": {
+          "side_decoy": 3,
+          "side_finish": 7,
+          "side_middle": 8
+        },
+        "side_count": 158
+      },
+      {
+        "approach_gaps": {
+          "Jupiter": {
+            "dx": 46.0,
+            "gap": 42.0
+          },
+          "Mars": {
+            "dx": 29.0,
+            "gap": 42.0
+          },
+          "Moon": {
+            "dx": 33.0,
+            "gap": 42.0
+          },
+          "Neptune": {
+            "dx": 43.0,
+            "gap": 42.0
+          },
+          "Prop Plane": {
+            "dx": 37.0,
+            "gap": 42.0
+          },
+          "Saturn": {
+            "dx": 27.0,
+            "gap": 42.0
+          },
+          "Space Station": {
+            "dx": 21.0,
+            "gap": 42.0
+          },
+          "Uranus": {
+            "dx": 23.0,
+            "gap": 42.0
+          }
+        },
+        "balloon_count": 659,
+        "clearance_violations": [],
+        "main_count": 489,
+        "sample": [
+          {
+            "color": 0,
+            "radius": 27,
+            "role": "main",
+            "x": 311.0,
+            "y": 510.0
+          },
+          {
+            "color": 2,
+            "radius": 33,
+            "role": "main",
+            "x": 315.0,
+            "y": 386.0
+          },
+          {
+            "color": 1,
+            "radius": 29,
+            "role": "side",
+            "x": 451,
+            "y": 400.0
+          },
+          {
+            "color": 0,
+            "radius": 26,
+            "role": "main",
+            "x": 240.0,
+            "y": 211.0
+          },
+          {
+            "color": 2,
+            "radius": 31,
+            "role": "main",
+            "x": 241.0,
+            "y": 75.0
+          },
+          {
+            "color": 2,
+            "radius": 24,
+            "role": "side",
+            "x": 72,
+            "y": 115.0
+          },
+          {
+            "color": 3,
+            "radius": 30,
+            "role": "main",
+            "x": 254.0,
+            "y": -104.0
+          },
+          {
+            "color": 1,
+            "radius": 27,
+            "role": "main",
+            "x": 140.0,
+            "y": -266.0
+          },
+          {
+            "color": 1,
+            "radius": 24,
+            "role": "side",
+            "x": 350,
+            "y": -274.0
+          },
+          {
+            "color": 1,
+            "radius": 29,
+            "role": "main",
+            "x": 204.0,
+            "y": -440.0
+          },
+          {
+            "color": 0,
+            "radius": 24,
+            "role": "side",
+            "x": 63,
+            "y": -486.0
+          },
+          {
+            "color": 0,
+            "radius": 29,
+            "role": "main",
+            "x": 315.0,
+            "y": -613.0
+          },
+          {
+            "color": 2,
+            "radius": 27,
+            "role": "side",
+            "x": 113,
+            "y": -659.0
+          },
+          {
+            "color": 2,
+            "radius": 24,
+            "role": "main",
+            "x": 267.0,
+            "y": -749.0
+          },
+          {
+            "color": 1,
+            "radius": 23,
+            "role": "side",
+            "x": 134,
+            "y": -722.0
+          },
+          {
+            "color": 3,
+            "radius": 31,
+            "role": "main",
+            "x": 262.0,
+            "y": -864.0
+          },
+          {
+            "color": 1,
+            "radius": 31,
+            "role": "main",
+            "x": 237.0,
+            "y": -988.0
+          },
+          {
+            "color": 3,
+            "radius": 29,
+            "role": "side",
+            "x": 402,
+            "y": -1011.0
+          },
+          {
+            "color": 0,
+            "radius": 23,
+            "role": "main",
+            "x": 270.0,
+            "y": -1161.0
+          },
+          {
+            "color": 3,
+            "radius": 24,
+            "role": "main",
+            "x": 238.0,
+            "y": -1300.0
+          },
+          {
+            "color": 2,
+            "radius": 28,
+            "role": "main",
+            "x": 124.0,
+            "y": -1443.0
+          },
+          {
+            "color": 0,
+            "radius": 23,
+            "role": "main",
+            "x": 192.0,
+            "y": -1587.0
+          },
+          {
+            "color": 0,
+            "radius": 30,
+            "role": "side",
+            "x": 62,
+            "y": -1564.0
+          },
+          {
+            "color": 1,
+            "radius": 27,
+            "role": "main",
+            "x": 270.0,
+            "y": -1725.0
+          },
+          {
+            "color": 0,
+            "radius": 26,
+            "role": "main",
+            "x": 145.0,
+            "y": -1899.0
+          },
+          {
+            "color": 0,
+            "radius": 29,
+            "role": "side",
+            "x": 297,
+            "y": -1923.0
+          },
+          {
+            "color": 2,
+            "radius": 28,
+            "role": "main",
+            "x": 82.0,
+            "y": -2047.0
+          },
+          {
+            "color": 2,
+            "radius": 25,
+            "role": "main",
+            "x": 146.0,
+            "y": -2214.0
+          },
+          {
+            "color": 0,
+            "radius": 25,
+            "role": "main",
+            "x": 149.0,
+            "y": -2391.0
+          },
+          {
+            "color": 2,
+            "radius": 31,
+            "role": "main",
+            "x": 115.0,
+            "y": -2552.0
+          },
+          {
+            "color": 3,
+            "radius": 25,
+            "role": "main",
+            "x": 75.0,
+            "y": -2692.0
+          },
+          {
+            "color": 3,
+            "radius": 28,
+            "role": "side",
+            "x": 227,
+            "y": -2714.0
+          }
+        ],
+        "seed": 202,
+        "side_color_matches": {
+          "matches": 50,
+          "ratio": 0.294,
+          "total": 170
+        },
+        "side_combo_shapes": {
+          "side_decoy": 8,
+          "side_finish": 6,
+          "side_middle": 11
+        },
+        "side_count": 170
+      },
+      {
+        "approach_gaps": {
+          "Jupiter": {
+            "dx": 21.0,
+            "gap": 42.0
+          },
+          "Mars": {
+            "dx": 25.0,
+            "gap": 42.0
+          },
+          "Moon": {
+            "dx": 2.0,
+            "gap": 42.0
+          },
+          "Neptune": {
+            "dx": 8.0,
+            "gap": 42.0
+          },
+          "Prop Plane": {
+            "dx": 10.0,
+            "gap": 42.0
+          },
+          "Saturn": {
+            "dx": 41.0,
+            "gap": 35.0
+          },
+          "Space Station": {
+            "dx": 22.0,
+            "gap": 42.0
+          },
+          "Uranus": {
+            "dx": 4.0,
+            "gap": 42.0
+          }
+        },
+        "balloon_count": 656,
+        "clearance_violations": [],
+        "main_count": 490,
+        "sample": [
+          {
+            "color": 2,
+            "radius": 31,
+            "role": "main",
+            "x": 240.0,
+            "y": 510.0
+          },
+          {
+            "color": 3,
+            "radius": 32,
+            "role": "main",
+            "x": 257.0,
+            "y": 337.0
+          },
+          {
+            "color": 0,
+            "radius": 25,
+            "role": "side",
+            "x": 67,
+            "y": 379.0
+          },
+          {
+            "color": 2,
+            "radius": 28,
+            "role": "main",
+            "x": 274.0,
+            "y": 206.0
+          },
+          {
+            "color": 3,
+            "radius": 23,
+            "role": "main",
+            "x": 353.0,
+            "y": 29.0
+          },
+          {
+            "color": 3,
+            "radius": 28,
+            "role": "main",
+            "x": 338.0,
+            "y": -145.0
+          },
+          {
+            "color": 1,
+            "radius": 31,
+            "role": "main",
+            "x": 307.0,
+            "y": -317.0
+          },
+          {
+            "color": 2,
+            "radius": 31,
+            "role": "main",
+            "x": 337.0,
+            "y": -467.0
+          },
+          {
+            "color": 1,
+            "radius": 29,
+            "role": "side",
+            "x": 183,
+            "y": -506.0
+          },
+          {
+            "color": 0,
+            "radius": 24,
+            "role": "main",
+            "x": 309.0,
+            "y": -601.0
+          },
+          {
+            "color": 2,
+            "radius": 28,
+            "role": "side",
+            "x": 473,
+            "y": -569.0
+          },
+          {
+            "color": 3,
+            "radius": 30,
+            "role": "main",
+            "x": 356.0,
+            "y": -726.0
+          },
+          {
+            "color": 2,
+            "radius": 32,
+            "role": "main",
+            "x": 326.0,
+            "y": -876.0
+          },
+          {
+            "color": 3,
+            "radius": 23,
+            "role": "main",
+            "x": 409.0,
+            "y": -1008.0
+          },
+          {
+            "color": 2,
+            "radius": 27,
+            "role": "side",
+            "x": 200,
+            "y": -966.0
+          },
+          {
+            "color": 1,
+            "radius": 29,
+            "role": "main",
+            "x": 351.0,
+            "y": -1180.0
+          },
+          {
+            "color": 0,
+            "radius": 23,
+            "role": "side",
+            "x": 482,
+            "y": -1162.0
+          },
+          {
+            "color": 1,
+            "radius": 31,
+            "role": "main",
+            "x": 267.0,
+            "y": -1303.0
+          },
+          {
+            "color": 0,
+            "radius": 23,
+            "role": "side",
+            "x": 123,
+            "y": -1313.0
+          },
+          {
+            "color": 3,
+            "radius": 30,
+            "role": "main",
+            "x": 413.0,
+            "y": -1476.0
+          },
+          {
+            "color": 1,
+            "radius": 30,
+            "role": "main",
+            "x": 297.0,
+            "y": -1596.0
+          },
+          {
+            "color": 0,
+            "radius": 30,
+            "role": "main",
+            "x": 433.0,
+            "y": -1727.0
+          },
+          {
+            "color": 2,
+            "radius": 31,
+            "role": "main",
+            "x": 340.0,
+            "y": -1851.0
+          },
+          {
+            "color": 2,
+            "radius": 26,
+            "role": "side",
+            "x": 480,
+            "y": -1891.0
+          },
+          {
+            "color": 1,
+            "radius": 27,
+            "role": "main",
+            "x": 298.0,
+            "y": -1976.0
+          },
+          {
+            "color": 1,
+            "radius": 29,
+            "role": "main",
+            "x": 434.0,
+            "y": -2106.0
+          },
+          {
+            "color": 0,
+            "radius": 25,
+            "role": "side",
+            "x": 300,
+            "y": -2128.0
+          },
+          {
+            "color": 3,
+            "radius": 27,
+            "role": "main",
+            "x": 479.0,
+            "y": -2239.0
+          },
+          {
+            "color": 1,
+            "radius": 33,
+            "role": "main",
+            "x": 446,
+            "y": -2363.0
+          },
+          {
+            "color": 0,
+            "radius": 29,
+            "role": "side",
+            "x": 279,
+            "y": -2346.0
+          },
+          {
+            "color": 0,
+            "radius": 25,
+            "role": "main",
+            "x": 369,
+            "y": -2501.0
+          },
+          {
+            "color": 2,
+            "radius": 23,
+            "role": "main",
+            "x": 463,
+            "y": -2661.0
+          }
+        ],
+        "seed": 303,
+        "side_color_matches": {
+          "matches": 32,
+          "ratio": 0.193,
+          "total": 166
+        },
+        "side_combo_shapes": {
+          "side_decoy": 7,
+          "side_finish": 5,
+          "side_middle": 6
+        },
+        "side_count": 166
+      },
+      {
+        "approach_gaps": {
+          "Jupiter": {
+            "dx": 41.0,
+            "gap": 42.0
+          },
+          "Mars": {
+            "dx": 38.0,
+            "gap": 42.0
+          },
+          "Moon": {
+            "dx": 54.0,
+            "gap": 42.0
+          },
+          "Neptune": {
+            "dx": 22.0,
+            "gap": 42.0
+          },
+          "Prop Plane": {
+            "dx": 55.0,
+            "gap": 6.0
+          },
+          "Saturn": {
+            "dx": 2.0,
+            "gap": 42.0
+          },
+          "Space Station": {
+            "dx": 36.0,
+            "gap": 42.0
+          },
+          "Uranus": {
+            "dx": 1.0,
+            "gap": 42.0
+          }
+        },
+        "balloon_count": 675,
+        "clearance_violations": [],
+        "main_count": 494,
+        "sample": [
+          {
+            "color": 1,
+            "radius": 23,
+            "role": "main",
+            "x": 375.0,
+            "y": 510.0
+          },
+          {
+            "color": 3,
+            "radius": 31,
+            "role": "main",
+            "x": 354.0,
+            "y": 339.0
+          },
+          {
+            "color": 1,
+            "radius": 24,
+            "role": "main",
+            "x": 257.0,
+            "y": 174.0
+          },
+          {
+            "color": 1,
+            "radius": 27,
+            "role": "main",
+            "x": 324.0,
+            "y": 21.0
+          },
+          {
+            "color": 0,
+            "radius": 31,
+            "role": "main",
+            "x": 259.0,
+            "y": -149.0
+          },
+          {
+            "color": 0,
+            "radius": 31,
+            "role": "main",
+            "x": 287.0,
+            "y": -272.0
+          },
+          {
+            "color": 3,
+            "radius": 26,
+            "role": "main",
+            "x": 188.0,
+            "y": -399.0
+          },
+          {
+            "color": 1,
+            "radius": 32,
+            "role": "main",
+            "x": 244.0,
+            "y": -532.0
+          },
+          {
+            "color": 3,
+            "radius": 25,
+            "role": "side",
+            "x": 74,
+            "y": -522.0
+          },
+          {
+            "color": 2,
+            "radius": 28,
+            "role": "main",
+            "x": 362.0,
+            "y": -686.0
+          },
+          {
+            "color": 0,
+            "radius": 29,
+            "role": "side",
+            "x": 182,
+            "y": -653.0
+          },
+          {
+            "color": 2,
+            "radius": 33,
+            "role": "main",
+            "x": 466.0,
+            "y": -813.0
+          },
+          {
+            "color": 2,
+            "radius": 23,
+            "role": "main",
+            "x": 402.0,
+            "y": -981.0
+          },
+          {
+            "color": 0,
+            "radius": 31,
+            "role": "main",
+            "x": 436.0,
+            "y": -1132.0
+          },
+          {
+            "color": 3,
+            "radius": 30,
+            "role": "side",
+            "x": 249,
+            "y": -1156.0
+          },
+          {
+            "color": 3,
+            "radius": 33,
+            "role": "main",
+            "x": 432.0,
+            "y": -1265.0
+          },
+          {
+            "color": 0,
+            "radius": 33,
+            "role": "main",
+            "x": 411.0,
+            "y": -1415.0
+          },
+          {
+            "color": 1,
+            "radius": 23,
+            "role": "main",
+            "x": 413.0,
+            "y": -1542.0
+          },
+          {
+            "color": 3,
+            "radius": 31,
+            "role": "main",
+            "x": 468.0,
+            "y": -1664.0
+          },
+          {
+            "color": 3,
+            "radius": 30,
+            "role": "side",
+            "x": 283,
+            "y": -1643.0
+          },
+          {
+            "color": 0,
+            "radius": 24,
+            "role": "main",
+            "x": 379.0,
+            "y": -1817.0
+          },
+          {
+            "color": 3,
+            "radius": 24,
+            "role": "main",
+            "x": 379.0,
+            "y": -1965.0
+          },
+          {
+            "color": 2,
+            "radius": 27,
+            "role": "main",
+            "x": 430.0,
+            "y": -2136.0
+          },
+          {
+            "color": 0,
+            "radius": 30,
+            "role": "main",
+            "x": 433.0,
+            "y": -2293.0
+          },
+          {
+            "color": 0,
+            "radius": 30,
+            "role": "side",
+            "x": 245,
+            "y": -2277.0
+          },
+          {
+            "color": 3,
+            "radius": 31,
+            "role": "main",
+            "x": 463.0,
+            "y": -2436.0
+          },
+          {
+            "color": 2,
+            "radius": 24,
+            "role": "side",
+            "x": 298,
+            "y": -2466.0
+          },
+          {
+            "color": 1,
+            "radius": 24,
+            "role": "main",
+            "x": 380.0,
+            "y": -2594.0
+          },
+          {
+            "color": 1,
+            "radius": 22,
+            "role": "side",
+            "x": 175,
+            "y": -2551.0
+          },
+          {
+            "color": 3,
+            "radius": 27,
+            "role": "main",
+            "x": 300.0,
+            "y": -2722.0
+          },
+          {
+            "color": 3,
+            "radius": 30,
+            "role": "side",
+            "x": 158,
+            "y": -2718.0
+          },
+          {
+            "color": 1,
+            "radius": 25,
+            "role": "main",
+            "x": 346.0,
+            "y": -2839.0
+          }
+        ],
+        "seed": 404,
+        "side_color_matches": {
+          "matches": 40,
+          "ratio": 0.221,
+          "total": 181
+        },
+        "side_combo_shapes": {
+          "side_decoy": 5,
+          "side_finish": 11,
+          "side_middle": 9
+        },
+        "side_count": 181
+      }
+    ],
+    "speed_ramp_off_multiplier": 1.0
+  },
+  "exact_contract": {
+    "combo": {
+      "combo_height_multiplier": 1.75,
+      "combo_streak_target": 3,
+      "feedback_seconds": 0.75,
+      "landmarks_break_streak": false,
+      "match_height_multiplier": 1.25,
+      "match_streak_target": 2,
+      "skips_break_streak": false
+    },
+    "controls": {
+      "keyboard": {
+        "altitude_debug_jump": "T",
+        "jump_or_downslash": "Space",
+        "mobile_overlay_debug_toggle": "M",
+        "move": [
+          "ArrowLeft",
+          "ArrowRight"
+        ],
+        "quit": "Escape",
+        "retry_after_game_over": "R",
+        "speed_ramp_debug_toggle": "P"
+      },
+      "touch": {
+        "action_air": "downslash",
+        "action_game_over": "retry",
+        "action_ground": "jump",
+        "action_name_entry": "enter",
+        "buttons": [
+          "left",
+          "right",
+          "action"
+        ]
+      }
+    },
+    "display": {
+      "camera_follow_bottom_ratio": 0.64,
+      "camera_follow_top_ratio": 0.38,
+      "debug_camera_anchor_ratio": 0.48,
+      "fps_cap": 60,
+      "logical_height": 800,
+      "logical_width": 540,
+      "maximum_delta_seconds": 0.03333333,
+      "world_floor_y": 660.0
+    },
+    "name_entry": {
+      "alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+      "blocked_initials": [
+        "ANL",
+        "ANU",
+        "ASS",
+        "BUM",
+        "BUT",
+        "CNT",
+        "COC",
+        "COK",
+        "CUM",
+        "CUN",
+        "DAM",
+        "DIC",
+        "DIK",
+        "DIQ",
+        "DMN",
+        "FAG",
+        "FAT",
+        "FCK",
+        "FKU",
+        "FUC",
+        "FUK",
+        "GAY",
+        "GOD",
+        "HEL",
+        "HO3",
+        "HOR",
+        "JEW",
+        "JIZ",
+        "KIK",
+        "KKK",
+        "KYS",
+        "NGA",
+        "NGR",
+        "NIG",
+        "PEN",
+        "PHK",
+        "PIS",
+        "POO",
+        "RAP",
+        "SCK",
+        "SEX",
+        "SHI",
+        "SHT",
+        "SLT",
+        "SMD",
+        "STF",
+        "SUC",
+        "SUK",
+        "TIT",
+        "TTS",
+        "VAG",
+        "WOP",
+        "WTF"
+      ],
+      "confirmation_choices": [
+        "submit",
+        "redo"
+      ],
+      "length": 3
+    },
+    "physics": {
+      "air_drag_per_update": 0.86,
+      "balloon_must_be_below_player_by": 4,
+      "balloon_sword_hit_padding": 16,
+      "combo_bounce_speed": 1217.0456030897117,
+      "goal_bounce_speed": 1080.0,
+      "gravity": 1550.0,
+      "ground_jump_speed": 860.0,
+      "hit_pause_seconds": 0.055,
+      "horizontal_wrap_padding": 38,
+      "match_bounce_speed": 1028.5912696499033,
+      "maximum_run_speed": 360.0,
+      "move_acceleration": 2400.0,
+      "normal_bounce_speed": 920.0,
+      "player_height": 46,
+      "player_width": 38,
+      "slash_cooldown": 0.12,
+      "slash_dive_speed": 560.0,
+      "slash_time": 0.28,
+      "slash_windup_ratio": 0.38
+    },
+    "progression": {
+      "atmosphere_fade_height": 950.0,
+      "markers": [
+        {
+          "asset_name": "airplane",
+          "height": 380,
+          "hit_height": 95,
+          "hit_offset_y": 18,
+          "hit_width": 270,
+          "name": "Prop Plane",
+          "sprite_offset_y": 80,
+          "x": 270.0
+        },
+        {
+          "asset_name": "station",
+          "height": 1133,
+          "hit_height": 130,
+          "hit_offset_y": 0,
+          "hit_width": 280,
+          "name": "Space Station",
+          "sprite_offset_y": 84,
+          "x": 270.0
+        },
+        {
+          "asset_name": "moon",
+          "height": 1980,
+          "hit_height": 155,
+          "hit_offset_y": 70,
+          "hit_width": 230,
+          "name": "Moon",
+          "sprite_offset_y": 28,
+          "x": 270.0
+        },
+        {
+          "asset_name": "mars",
+          "height": 2921,
+          "hit_height": 155,
+          "hit_offset_y": 70,
+          "hit_width": 230,
+          "name": "Mars",
+          "sprite_offset_y": 30,
+          "x": 270.0
+        },
+        {
+          "asset_name": "jupiter",
+          "height": 3932,
+          "hit_height": 175,
+          "hit_offset_y": 88,
+          "hit_width": 240,
+          "name": "Jupiter",
+          "sprite_offset_y": 25,
+          "x": 270.0
+        },
+        {
+          "asset_name": "saturn",
+          "height": 4991,
+          "hit_height": 125,
+          "hit_offset_y": 78,
+          "hit_width": 315,
+          "name": "Saturn",
+          "sprite_offset_y": 35,
+          "x": 270.0
+        },
+        {
+          "asset_name": "uranus",
+          "height": 6120,
+          "hit_height": 155,
+          "hit_offset_y": 75,
+          "hit_width": 205,
+          "name": "Uranus",
+          "sprite_offset_y": 28,
+          "x": 270.0
+        },
+        {
+          "asset_name": "neptune",
+          "height": 7320,
+          "hit_height": 155,
+          "hit_offset_y": 75,
+          "hit_width": 205,
+          "name": "Neptune",
+          "sprite_offset_y": 28,
+          "x": 270.0
+        }
+      ],
+      "maximum_speed_multiplier": 1.7,
+      "reentry_fall_distance": 220.0,
+      "reentry_minimum_fall_speed": 700.0,
+      "reentry_minimum_height": 900.0,
+      "speed_ramp_height": 5200.0
+    },
+    "route_generation": {
+      "active_color_names": [
+        "red",
+        "yellow",
+        "green",
+        "blue"
+      ],
+      "active_color_rgb": [
+        [
+          239,
+          86,
+          94
+        ],
+        [
+          255,
+          190,
+          81
+        ],
+        [
+          108,
+          209,
+          132
+        ],
+        [
+          88,
+          177,
+          235
+        ]
+      ],
+      "balloon_spacing_max_exclusive": 180,
+      "balloon_spacing_min": 115,
+      "goal_approach_gap": 42,
+      "goal_approach_x_jitter": 58,
+      "goal_clearance_bottom": 80,
+      "goal_clearance_top": 95,
+      "initial_preload_top_y": -1800,
+      "maximum_main_horizontal_drift": 150,
+      "optional_side_chance": 0.35,
+      "runtime_spawn_ahead_pixels": 1200,
+      "side_x_offset_max": 245,
+      "side_x_offset_min": 130,
+      "side_y_jitter": 46
+    },
+    "run_rules": {
+      "falling_below_camera_is_fatal": false,
+      "floor_fatal_after_first_pop": true,
+      "floor_safe_before_first_pop": true,
+      "horizontal_edges_wrap": true,
+      "score": "greatest integer height reached in meters"
+    }
+  },
+  "native_dummy_performance": {
+    "ground": {
+      "average_frame_work_ms": 0.8274,
+      "elapsed_seconds": 0.248224,
+      "final_balloon_count": 20,
+      "frames": 300,
+      "height_requested_m": 0,
+      "initial_balloon_count": 20,
+      "note": "Native Pygame dummy-driver observation; not a browser FPS claim."
+    },
+    "height_5000m": {
+      "average_frame_work_ms": 2.0783,
+      "elapsed_seconds": 0.623479,
+      "final_balloon_count": 456,
+      "frames": 300,
+      "height_requested_m": 5000,
+      "initial_balloon_count": 456,
+      "note": "Native Pygame dummy-driver observation; not a browser FPS claim."
+    }
+  },
+  "native_screenshots": [
+    {
+      "height": 800,
+      "height_m": 0,
+      "path": "html-remake/reference/screenshots/native/height-0000m.png",
+      "sha256": "462010aa8de637f50f03d128f039472a1a4408653e11b4396d7358600e178230",
+      "width": 540
+    },
+    {
+      "height": 800,
+      "height_m": 900,
+      "path": "html-remake/reference/screenshots/native/height-0900m.png",
+      "sha256": "4ad18f82a40300ec08b320a0bf0d780f9ed18993058909c3ead918596cd3cd35",
+      "width": 540
+    },
+    {
+      "height": 800,
+      "height_m": 3300,
+      "path": "html-remake/reference/screenshots/native/height-3300m.png",
+      "sha256": "53dc764c4e83056191ed0b5a2b54ad23e47821eccc0660e7f3ff24451267e5ff",
+      "width": 540
+    },
+    {
+      "height": 800,
+      "height_m": 5600,
+      "path": "html-remake/reference/screenshots/native/height-5600m.png",
+      "sha256": "059389aa73b2bdf9437cea4d36050b871e398bb8ee55d5931af35bec03618490",
+      "width": 540
+    }
+  ],
+  "rebuild_contract": {
+    "audio": {
+      "independent_buses": [
+        "effects",
+        "ambience_or_music"
+      ],
+      "pause_while_hidden": true,
+      "persistent_mute_and_volume": true,
+      "required": true,
+      "required_events": [
+        "jump",
+        "slash",
+        "balloon_pop",
+        "bounce",
+        "match",
+        "combo",
+        "landing",
+        "death",
+        "landmark_hit",
+        "reentry",
+        "ui_navigation",
+        "initials_entry",
+        "submit",
+        "retry"
+      ],
+      "unlock_gesture": "Start"
+    },
+    "display": {
+      "desktop_max_css_width": 500,
+      "dpr_caps": {
+        "HIGH": 2.0,
+        "LOW": 1.15,
+        "MED": 1.5
+      },
+      "landscape_phone_behavior": "rotate-device overlay",
+      "logical_height_formula": "540 * viewport_height / viewport_width",
+      "logical_width": 540,
+      "phone_portrait_css": "100dvw x 100dvh",
+      "safe_area_aware": true
+    },
+    "runtime": {
+      "bounded_transient_arrays": true,
+      "deterministic_hooks": [
+        "window.advanceTime(ms)",
+        "window.render_game_to_text()"
+      ],
+      "fixed_simulation_hz": 60,
+      "pause_while_hidden": true,
+      "prune_world_behind_camera": true,
+      "render_driver": "requestAnimationFrame"
+    },
+    "target_viewports": [
+      {
+        "class": "compact_phone",
+        "height": 667,
+        "width": 375
+      },
+      {
+        "class": "phone",
+        "height": 844,
+        "width": 390
+      },
+      {
+        "class": "tall_phone",
+        "height": 932,
+        "width": 430
+      },
+      {
+        "class": "tablet",
+        "height": 1024,
+        "width": 768
+      },
+      {
+        "class": "desktop",
+        "height": 900,
+        "width": 1440
+      }
+    ]
+  },
+  "schema": "over-the-moon-html-rebuild-reference-v1",
+  "source": {
+    "characterization_fingerprint": "fd5e6dd79d43298cd9c592c362c9c4a92bff0b532536c0f5049a29ed70d97546",
+    "commit": "4d7ac92211d1d20d747f19cb1e3803bc7592a5d4",
+    "commit_subject": "Fix web name entry arrows",
+    "pygame": "2.6.1",
+    "python": "3.9.6"
+  }
+}

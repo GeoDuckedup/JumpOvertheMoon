@@ -1,0 +1,10 @@
+[
+  {
+    "type": "console.error",
+    "text": "** MEDIA USER ACTION REQUIRED [1] **"
+  },
+  {
+    "type": "console.error",
+    "text": "PyMain: BrowserFS not found"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "name": "over-the-moon-html-remake",
+  "private": true,
+  "type": "module",
+  "version": "10.2.0",
+  "scripts": {
+    "build": "node ./scripts/build-release.mjs",
+    "build:pages": "npm run build && node ./scripts/build-pages.mjs",
+    "audit": "node ./test-output/phase10-release-audit.mjs",
+    "audit:pages": "node ./scripts/audit-pages.mjs",
+    "ship:pages": "npm run build:pages && npm run audit && npm run audit:pages"
+  }
+}

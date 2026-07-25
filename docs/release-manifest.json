@@ -1,0 +1,245 @@
+{
+  "name": "Over the Moon",
+  "version": "10.2.0",
+  "phase": 10,
+  "channel": "production",
+  "hosting": "github-pages",
+  "publicUrl": "https://geoduckedup.github.io/JumpOvertheMoon/",
+  "entry": "./",
+  "generatedAt": "2026-07-25T06:06:06.224Z",
+  "fileCount": 46,
+  "totalBytes": 6472871,
+  "gameAssetCount": 25,
+  "files": [
+    {
+      "path": ".nojekyll",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".over-the-moon-pages",
+      "bytes": 7,
+      "sha256": "cf966a5d3bfdb4c3dab146c0b12a22b85a30aa449ed010a5ee3cf04ddeb5302e"
+    },
+    {
+      "path": "assets/audio/balloon-pop-cc0.wav",
+      "bytes": 52562,
+      "sha256": "46fe6fb259dbce769ba97021ae040be83f6980dccaa3cb2a80ae395f603663d7"
+    },
+    {
+      "path": "assets/game/balloon_blue.png",
+      "bytes": 14751,
+      "sha256": "91e9e699b2aeb88af83aa18bcc243f99682d0278f9eb69d22964512f6c5498a1"
+    },
+    {
+      "path": "assets/game/balloon_green.png",
+      "bytes": 6790,
+      "sha256": "581485101015ecb686e947f63eacd5b2bd72d32c3753b3298bd7f6044b459ef1"
+    },
+    {
+      "path": "assets/game/balloon_red.png",
+      "bytes": 15713,
+      "sha256": "5c17064526872376c4a8cda60ad3334e33d52c21ad125e969e2c0bf823476aa1"
+    },
+    {
+      "path": "assets/game/balloon_yellow.png",
+      "bytes": 15010,
+      "sha256": "73ede60c7584adfa6a3175e3e148f0c4e724bdfa049ef31294b233d3c55db4fd"
+    },
+    {
+      "path": "assets/game/cat_fall.png",
+      "bytes": 259078,
+      "sha256": "0b941ffb4a222026ea1de49965000d5b33459e803e5ec58e6ce743c22d6c2073"
+    },
+    {
+      "path": "assets/game/cat_idle.png",
+      "bytes": 244394,
+      "sha256": "60f28ed702ba25a90510e0151a5baa4f212fbf4b6bb7a678f3defa812376a39a"
+    },
+    {
+      "path": "assets/game/cat_jump.png",
+      "bytes": 255641,
+      "sha256": "17a043507ce11071cb1e56175e217b089665f91a1237532ca3e240ccaeef5e35"
+    },
+    {
+      "path": "assets/game/cat_slash.png",
+      "bytes": 247988,
+      "sha256": "2a8f077550246039c18fba6c56fdb6f0b23425dc3f66b22491f8c9b5de2df8ac"
+    },
+    {
+      "path": "assets/game/goal_airplane.png",
+      "bytes": 50075,
+      "sha256": "94920090b9485e74a47996145448da1bdac8d051ba7448cd7f6f5c9a4561e3f8"
+    },
+    {
+      "path": "assets/game/goal_black-hole.png",
+      "bytes": 75936,
+      "sha256": "3566c0da50f5a859cd77a53cf7d144f76f02799d140d06d666ffb09445440292"
+    },
+    {
+      "path": "assets/game/goal_heliopause.png",
+      "bytes": 104813,
+      "sha256": "0e586ac49f5b8be3f4c4f750cbd1e18cd13d193a81cff91ff3dec19179a5c027"
+    },
+    {
+      "path": "assets/game/goal_jupiter.png",
+      "bytes": 89988,
+      "sha256": "0d2e1a71b8c4ef512793703f8eb57226573f9b2db67deb8f80937b0ee271fdb9"
+    },
+    {
+      "path": "assets/game/goal_kuiper-object.png",
+      "bytes": 80090,
+      "sha256": "03bf6dee81023d35c52008ba4d91832f3f45e1a988b563d7720db415a3ff2f33"
+    },
+    {
+      "path": "assets/game/goal_mars.png",
+      "bytes": 71238,
+      "sha256": "cb05f4811d7ae3a2f636d49e1d5fcb559995ca4c0cd62689a11af1e6a0fa1a55"
+    },
+    {
+      "path": "assets/game/goal_moon.png",
+      "bytes": 72704,
+      "sha256": "e30d5d2710ad396ced6cf3f11e616efa65a279c5588dcf941c5feca638961661"
+    },
+    {
+      "path": "assets/game/goal_neptune.png",
+      "bytes": 51469,
+      "sha256": "e56329b67919132181ba589c2d2a3ecc75b534ae9cbbb47c39c3a41945cbeab7"
+    },
+    {
+      "path": "assets/game/goal_oort-comet.png",
+      "bytes": 64379,
+      "sha256": "384c7e1069523e7e264272619960da39052f8ca534eaca8735af910689519597"
+    },
+    {
+      "path": "assets/game/goal_pluto.png",
+      "bytes": 59666,
+      "sha256": "c31acb13c6a2d3a33b246a097bd3e2c675c0af68a0179f930fbe4b7ee7e249df"
+    },
+    {
+      "path": "assets/game/goal_proxima-centauri.png",
+      "bytes": 104445,
+      "sha256": "b6d9005f8974764c9a039004cdbfe303d370b3c3c9990a6a7f58c3a9dcb1ed32"
+    },
+    {
+      "path": "assets/game/goal_saturn.png",
+      "bytes": 79248,
+      "sha256": "268096bfa23edce4c4096cae0ecd86c03156d9566ff38582fefd9df7d71c24bc"
+    },
+    {
+      "path": "assets/game/goal_station.png",
+      "bytes": 90946,
+      "sha256": "19ee1c863ad808a750a715a810752c6f4a11a467a055e546ba5e53daf2df5f17"
+    },
+    {
+      "path": "assets/game/goal_uranus.png",
+      "bytes": 48000,
+      "sha256": "b595ea9aee73a989978b0be4ca6002f448c1a187286eea0223cca9035e2bc707"
+    },
+    {
+      "path": "assets/game/goal_voyager-1.png",
+      "bytes": 36673,
+      "sha256": "024d9c3184577467155b6dbd5e48a5f90ff8fe75206b57862a0c9c914b5ef4bb"
+    },
+    {
+      "path": "assets/game/reentry_trail_light.png",
+      "bytes": 1071741,
+      "sha256": "e51d5009d8411c5e1fe1976d363bbd3de75c813be69e9b4d6681c55ccefe4cd9"
+    },
+    {
+      "path": "assets/game/splash_over_the_moon.png",
+      "bytes": 2929053,
+      "sha256": "061a2fc8b7ee030e063e001f95815b4e4c30f1ad4a88c7824f6f312a95fe79b8"
+    },
+    {
+      "path": "index.html",
+      "bytes": 11837,
+      "sha256": "18f8b456a40148a3732633537dd1a674f5e24791c5446229c385d76f363cc09b"
+    },
+    {
+      "path": "manifest.webmanifest",
+      "bytes": 596,
+      "sha256": "26f0dc37453d31e34d2ef4d22684fa3dd0a20bc625bf777e67465af73c084434"
+    },
+    {
+      "path": "service-worker.js",
+      "bytes": 3005,
+      "sha256": "1b201c05695a1cf6ce28734efdd1d70d56574a1212a2047bbca0543ad655e7c5"
+    },
+    {
+      "path": "src/assets.js",
+      "bytes": 1682,
+      "sha256": "79b833bd2e83686f6900d25fe36dbf7c9562121e9f4f91b38a221ca3a17ecf6f"
+    },
+    {
+      "path": "src/audio.js",
+      "bytes": 22930,
+      "sha256": "28c58c3eacf16f03bd4c80eca827ba669a681200fe8972f3150ac28d57a528b7"
+    },
+    {
+      "path": "src/config.js",
+      "bytes": 3746,
+      "sha256": "9eaedcf82a29ce54a14a163843a8514a2af1e9f5091763c0f0f6ba102bf00c8a"
+    },
+    {
+      "path": "src/game-config.js",
+      "bytes": 10043,
+      "sha256": "8bc0e5b2872d039ad361776e636649a331e8f3f55b760cdb1b06f7fb1ce2042f"
+    },
+    {
+      "path": "src/game.js",
+      "bytes": 52511,
+      "sha256": "460c760cfb02d1df1d989f064e205b09cf7459c99123156c9b1c2552a9c581c2"
+    },
+    {
+      "path": "src/input.js",
+      "bytes": 7659,
+      "sha256": "c7052ccc0bd8f5865fb11acbcd3a25ab624c704a322df3a54bc5c3ad5c5ec683"
+    },
+    {
+      "path": "src/layout.js",
+      "bytes": 5510,
+      "sha256": "3f118c678109fd2554121926d62674d4571a245db3a7303a5616b17b244d345b"
+    },
+    {
+      "path": "src/leaderboard.js",
+      "bytes": 7480,
+      "sha256": "f2ce3ca6f4c8f0040d708eea2070b65b650b08bd44be64c9b4425ac498578e80"
+    },
+    {
+      "path": "src/main.js",
+      "bytes": 44500,
+      "sha256": "7c42a5e32af798d9ff546828e1da6e407d605acc10b29ba3ed48f79e1c43cdbb"
+    },
+    {
+      "path": "src/name-entry.js",
+      "bytes": 3591,
+      "sha256": "7355f5811831fe8f3357023c1b5afab42e2f483a3b4f5807b7a6a7739474fd10"
+    },
+    {
+      "path": "src/performance.js",
+      "bytes": 3656,
+      "sha256": "e730cca91a2de31315ecb0e66a237787f1d78e97aaed44678e2cb24ec3887bd1"
+    },
+    {
+      "path": "src/renderer.js",
+      "bytes": 60118,
+      "sha256": "6a9a9ab6ec3f0083685fc03f05a849bcfa9f453ff8da55215b79966e99903d9e"
+    },
+    {
+      "path": "src/route.js",
+      "bytes": 5759,
+      "sha256": "775910cdbfea6452a31c451fc0aa7bebd5daa8729ac4e40b9b692719004c4f02"
+    },
+    {
+      "path": "src/runtime.js",
+      "bytes": 8656,
+      "sha256": "d6ae3b5b5d87bf2389bef3d7e1c9de47f056c027e60ec38f2427fd9a86d3d78e"
+    },
+    {
+      "path": "styles.css",
+      "bytes": 27194,
+      "sha256": "89ecd6d28153ccc7c2d0b2d4257c5909aa20454feac8b65b11151196a19c1014"
+    }
+  ]
+}

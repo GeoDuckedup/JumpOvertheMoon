@@ -1,0 +1,23 @@
+{
+  "id": "./",
+  "name": "Over the Moon",
+  "short_name": "Over the Moon",
+  "description": "Bounce a sword-wielding cow from Earth to a black hole.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "portrait",
+  "background_color": "#050817",
+  "theme_color": "#050817",
+  "categories": ["games", "entertainment"],
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "../cat-sword-climb/assets/cat_idle.png",
+      "sizes": "522x405",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
