@@ -902,6 +902,9 @@ Original prompt: phase 1
 
 ## Current TODO
 
-- The four-color, gold-aura marker and combo pop were physically approved on
-  iPhone. Promote the verified `10.3.1` source and generated `docs/` package to
-  GitHub Pages without changing Firebase data or rules.
+- Build `10.3.1` was physically approved on iPhone and deployed from `main` in
+  commit `922dbb6`. GitHub Pages run `30557720354` completed successfully. The
+  live HTTPS URL reported the production version and cache as `10.3.1`, loaded
+  25/25 assets, read the established Firebase top ten, started gameplay, and
+  accepted movement/jump input with no browser or game errors.
+- No release blocker remains. Firebase data and rules were not changed.
