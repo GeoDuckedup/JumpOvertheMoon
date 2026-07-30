@@ -1,5 +1,5 @@
-import { AssetLoader } from "./assets.js?v=10.2.0";
-import { GameAudio } from "./audio.js?v=10.2.0";
+import { AssetLoader } from "./assets.js?v=10.3.1";
+import { GameAudio } from "./audio.js?v=10.3.1";
 import {
   ASSET_MANIFEST,
   BUILD_VERSION,
@@ -9,15 +9,15 @@ import {
   RUNTIME_CONFIG,
   detectInitialQuality,
   resolveQualityProfile,
-} from "./config.js?v=10.2.0";
-import { CAMERA } from "./game-config.js?v=10.2.0";
-import { OverTheMoonGame } from "./game.js?v=10.2.0";
-import { InputController } from "./input.js?v=10.2.0";
-import { LayoutController } from "./layout.js?v=10.2.0";
-import { LeaderboardService } from "./leaderboard.js?v=10.2.0";
-import { AdaptiveQualityController } from "./performance.js?v=10.2.0";
-import { ShellRenderer } from "./renderer.js?v=10.2.0";
-import { FixedStepRuntime } from "./runtime.js?v=10.2.0";
+} from "./config.js?v=10.3.1";
+import { CAMERA } from "./game-config.js?v=10.3.1";
+import { OverTheMoonGame } from "./game.js?v=10.3.1";
+import { InputController } from "./input.js?v=10.3.1";
+import { LayoutController } from "./layout.js?v=10.3.1";
+import { LeaderboardService } from "./leaderboard.js?v=10.3.1";
+import { AdaptiveQualityController } from "./performance.js?v=10.3.1";
+import { ShellRenderer } from "./renderer.js?v=10.3.1";
+import { FixedStepRuntime } from "./runtime.js?v=10.3.1";
 
 const root = document.querySelector("#viewport-root");
 const stage = document.querySelector("#game-stage");
@@ -35,6 +35,7 @@ const devSpeedToggle = document.querySelector("#dev-speed-toggle");
 const devSpeedStatus = document.querySelector("#dev-speed-status");
 const devTestBird = document.querySelector("#dev-test-bird");
 const devTestSaucer = document.querySelector("#dev-test-saucer");
+const devTestGold = document.querySelector("#dev-test-gold");
 const devWarp = document.querySelector("#dev-warp");
 const startOverlay = document.querySelector("#start-overlay");
 const startButton = document.querySelector("#start-button");
@@ -93,6 +94,7 @@ if (
     devSpeedStatus &&
     devTestBird &&
     devTestSaucer &&
+    devTestGold &&
     devWarp &&
     startOverlay &&
     startButton &&
@@ -440,6 +442,12 @@ const syncDevToolsUi = () => {
   setDisabled(devSpeedToggle, state.starting);
   setDisabled(devTestBird, !state.assetsReady || state.starting);
   setDisabled(devTestSaucer, !state.assetsReady || state.starting);
+  setDisabled(
+    devTestGold,
+    !state.assetsReady ||
+      state.starting ||
+      !state.game?.leaderboardBalloonCount,
+  );
   setDisabled(devWarp, !state.assetsReady || state.starting || !marker);
 };
 
@@ -786,6 +794,40 @@ const warpToSelectedLandmark = async () => {
   return true;
 };
 
+const warpToTopLeaderboardBalloon = async () => {
+  if (
+    !state.devTools.enabled ||
+    !state.assetsReady ||
+    state.starting ||
+    !game.getSnapshot().leaderboardBalloonCount
+  ) {
+    return false;
+  }
+
+  state.starting = true;
+  syncUi();
+  await audio.unlock();
+  game.start();
+  input.clear();
+  const warp = game.debugWarpBelowLeaderboardBalloon(1, 3);
+  audio.setAltitude(game.currentHeight, "playing");
+  leaderboard.retryPending();
+  state.devTools.lastWarp = {
+    leaderboardRank: warp.leaderboardBalloon.leaderboard.rank,
+    initials: warp.leaderboardBalloon.leaderboard.initials,
+    heightMeters: warp.leaderboardBalloon.leaderboard.scoreMeters,
+    requestedBalloonsBelow: warp.requestedBalloonsBelow,
+    targetBalloonId: warp.targetBalloon?.id || null,
+  };
+  state.starting = false;
+  liveStatus.textContent =
+    `Dev jump: gold #1 ${warp.leaderboardBalloon.leaderboard.initials}, ` +
+    `${warp.leaderboardBalloon.leaderboard.scoreMeters} meters.`;
+  audio.play("ui");
+  setDevPanelOpen(false);
+  return true;
+};
+
 input = new InputController({
   leftButton: touchLeft,
   rightButton: touchRight,
@@ -1090,6 +1132,7 @@ devTestBird.addEventListener("click", () =>
 devTestSaucer.addEventListener("click", () =>
   previewDevAmbientFlyby("saucer"),
 );
+devTestGold.addEventListener("click", warpToTopLeaderboardBalloon);
 devWarp.addEventListener("click", warpToSelectedLandmark);
 document.addEventListener("fullscreenchange", () => {
   updateFullscreenButton();
@@ -1272,6 +1315,14 @@ const developerTestApi = Object.freeze({
     render();
     return result;
   },
+  debugWarpBelowLeaderboardBalloon: (rank = 1, balloonsBelow = 3) => {
+    const result = game.debugWarpBelowLeaderboardBalloon(
+      rank,
+      balloonsBelow,
+    );
+    render();
+    return result;
+  },
   openDevTools: () => setDevPanelOpen(true),
   closeDevTools: () => setDevPanelOpen(false),
   setSpeedRampLocked: (locked) => setDevSpeedLock(locked),
@@ -1289,6 +1340,7 @@ const developerTestApi = Object.freeze({
     return setDevLandmarkIndex(index);
   },
   warpToSelectedLandmark,
+  warpToTopLeaderboardBalloon,
   debugSetCombo: (color, streak) => {
     game.debugSetCombo(color, streak);
     render();

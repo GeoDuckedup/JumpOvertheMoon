@@ -8,7 +8,7 @@ The balance pass found no unreachable route, so those values remain intact.
 ## Release identity
 
 - Phase: `10`
-- Build version: `10.2.0`
+- Build version: `10.3.1`
 - Channel: `production`
 - Public URL: developer UI and score-mutating test hooks hidden
 - DEV URL: append `?dev=1`
@@ -176,6 +176,10 @@ MED-to-LOW downgrade remains the safety net under sustained real-frame pressure.
 
 ## Next handoff
 
-Build `10.2.0` is the GitHub Pages production package. Future changes should
-preserve the Pages-root build and run the same physical-device, offline,
-leaderboard, and exact-URL checks before each push.
+Build `10.3.1` is the current GitHub Pages-ready production package. Top-ten
+scores now appear at their exact recorded heights as optional, interactive
+four-color balloons with a gold aura, rank, and initials. They pop and bounce
+like normal balloons, participate in the combo matching their displayed color,
+and do not alter the generated safe route. Future changes should preserve the
+Pages-root build and run the same physical-device, offline, leaderboard, and
+exact-URL checks before each push.

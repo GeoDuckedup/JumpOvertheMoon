@@ -41,7 +41,7 @@ const waitForReady = (page) =>
     const state = JSON.parse(window.render_game_to_text?.() || "{}");
     return (
       state.phase === 10 &&
-      state.release?.version === "10.2.0" &&
+      state.release?.version === "10.3.1" &&
       state.assets?.loaded === 25 &&
       state.assets?.loaded === state.assets?.total &&
       state.assets?.failures?.length === 0
@@ -395,7 +395,7 @@ try {
     "The packaged desktop release must stay in its fixed-width frame.",
   );
   assert(
-    desktopState.release.version === "10.2.0" &&
+    desktopState.release.version === "10.3.1" &&
       desktopState.assets.loaded === 25 &&
       !desktopState.devTools.enabled,
     "The packaged release must contain the complete public build.",

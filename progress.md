@@ -861,3 +861,47 @@ Original prompt: phase 1
   (SHA-256
   `1515d36721873abf8b6d404666b0723420a3ad3f51814b75d4a8e3157e8dfad7`).
   No Firebase write or rule change was performed.
+- Build `10.3.0` promotes leaderboard balloons from the tabled Black Hole idea
+  into an independent gameplay feature. The current Firebase top ten appears
+  at each score's exact recorded height as a shiny gold balloon labeled with
+  rank, initials, and height. Gold balloons are real slash targets: they pop,
+  count toward the run's pop total, play the established pop/bounce events,
+  and respawn on a fresh run.
+- Gold markers remain optional and separate from deterministic route history,
+  safe-route generation, and the 42-active-balloon cap. Popped gold IDs survive
+  leaderboard refreshes for the rest of the run. A gold pop preserves the
+  active red/yellow/green/blue combo instead of advancing or breaking it.
+- Query-gated DEV tools now include `TEST GOLD #1`, which starts a fresh run
+  three safe-route balloons below the current first-place score. The focused
+  logic and 390 × 844 browser audits verified exact height mapping, ten unique
+  markers, rank/initials labels, real slash/pop/bounce, gold burst rendering,
+  combo neutrality, refresh persistence, and fresh-run reset with no Firebase
+  writes or browser errors.
+- The required gameplay client and complete Phase 10 release matrix pass
+  `10.3.0`, including public/DEV isolation, 25/25 assets, touch swipe, audio,
+  true offline reload, Black Hole warp, speed lock, fixed-width desktop, and
+  all 46 package hashes. The generated `docs/` Pages package passed the same
+  focused gold-balloon phone flow; marker and pop captures were visually
+  inspected.
+- Build `10.3.1` changes leaderboard markers from solid gold to normal
+  red/blue/green/yellow cores in a deterministic rank rotation, surrounded by
+  a separate animated gold halo, double ring, gold string, sparkle, and rank
+  tag. The core color is now unmistakable and every marker advances, resets,
+  and rewards the combo exactly like its displayed normal color.
+- The DEV shortcut is now labeled `TEST TOP #1`. The focused logic and phone
+  browser audits verified the four-color rotation, exact score heights,
+  interactive slash/pop/bounce, a red 2/3 streak becoming `RED 3/3 · COMBO`,
+  mixed base-color/gold pop particles, refresh persistence, and fresh-run
+  respawn without Firebase writes or browser errors. The phone marker and pop
+  captures were visually inspected.
+- The generated `10.3.1` release and GitHub Pages packages passed all 46 hash
+  checks, the 1,000-seed route-fairness audit, retained descent tests, the
+  required web-game client, and the full public/DEV, phone, touch-swipe, audio,
+  true-offline, Black Hole, speed-lock, performance, and fixed-width desktop
+  browser matrix with 25/25 assets and zero browser errors.
+
+## Current TODO
+
+- The four-color, gold-aura marker and combo pop were physically approved on
+  iPhone. Promote the verified `10.3.1` source and generated `docs/` package to
+  GitHub Pages without changing Firebase data or rules.

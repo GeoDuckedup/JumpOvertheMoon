@@ -2,7 +2,7 @@ export const LOGICAL_WIDTH = 540;
 export const REFERENCE_LOGICAL_HEIGHT = 800;
 export const DESKTOP_MAX_WIDTH = 500;
 export const PHASE = 10;
-export const BUILD_VERSION = "10.2.0";
+export const BUILD_VERSION = "10.3.1";
 export const RELEASE_CHANNEL = "production";
 
 export const RELEASE_CONFIG = Object.freeze({

@@ -1,7 +1,7 @@
 import {
   DESKTOP_MAX_WIDTH,
   LOGICAL_WIDTH,
-} from "./config.js?v=10.2.0";
+} from "./config.js?v=10.3.1";
 
 const toNumber = (value) => {
   const parsed = Number.parseFloat(value);

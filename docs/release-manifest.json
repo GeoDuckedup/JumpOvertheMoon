@@ -1,14 +1,14 @@
 {
   "name": "Over the Moon",
-  "version": "10.2.0",
+  "version": "10.3.1",
   "phase": 10,
   "channel": "production",
   "hosting": "github-pages",
   "publicUrl": "https://geoduckedup.github.io/JumpOvertheMoon/",
   "entry": "./",
-  "generatedAt": "2026-07-25T06:06:06.224Z",
+  "generatedAt": "2026-07-30T15:37:28.835Z",
   "fileCount": 46,
-  "totalBytes": 6472871,
+  "totalBytes": 6485459,
   "gameAssetCount": 25,
   "files": [
     {
@@ -19,7 +19,7 @@
     {
       "path": ".over-the-moon-pages",
       "bytes": 7,
-      "sha256": "cf966a5d3bfdb4c3dab146c0b12a22b85a30aa449ed010a5ee3cf04ddeb5302e"
+      "sha256": "19451a30d960cac8076e19edb9180b007babf3808256a48eb3975429ff6d3c49"
     },
     {
       "path": "assets/audio/balloon-pop-cc0.wav",
@@ -153,8 +153,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 11837,
-      "sha256": "18f8b456a40148a3732633537dd1a674f5e24791c5446229c385d76f363cc09b"
+      "bytes": 11939,
+      "sha256": "f7edeca4d167d42d451bbbb1bc21cd312eae042bea52074a7a460005881a6479"
     },
     {
       "path": "manifest.webmanifest",
@@ -164,7 +164,7 @@
     {
       "path": "service-worker.js",
       "bytes": 3005,
-      "sha256": "1b201c05695a1cf6ce28734efdd1d70d56574a1212a2047bbca0543ad655e7c5"
+      "sha256": "480b2f3a5850bce5467f6b3f46086f4eaaac4cd57e64569f071bc0655ad85b83"
     },
     {
       "path": "src/assets.js",
@@ -179,17 +179,17 @@
     {
       "path": "src/config.js",
       "bytes": 3746,
-      "sha256": "9eaedcf82a29ce54a14a163843a8514a2af1e9f5091763c0f0f6ba102bf00c8a"
+      "sha256": "66a13ea426fbb766bd5044fc9f0c68bed782ad48ec741f58d8fdd1cb955c1baf"
     },
     {
       "path": "src/game-config.js",
-      "bytes": 10043,
-      "sha256": "8bc0e5b2872d039ad361776e636649a331e8f3f55b760cdb1b06f7fb1ce2042f"
+      "bytes": 10239,
+      "sha256": "283d78525559cfbafdd6225c4b8b0ca7c027b52798df3e4a595f213dfc48ebc2"
     },
     {
       "path": "src/game.js",
-      "bytes": 52511,
-      "sha256": "460c760cfb02d1df1d989f064e205b09cf7459c99123156c9b1c2552a9c581c2"
+      "bytes": 58895,
+      "sha256": "af5beb2233cc1884b39fdd638223c4b230cbf6d132f44c00753d68dd36c36b7f"
     },
     {
       "path": "src/input.js",
@@ -199,17 +199,17 @@
     {
       "path": "src/layout.js",
       "bytes": 5510,
-      "sha256": "3f118c678109fd2554121926d62674d4571a245db3a7303a5616b17b244d345b"
+      "sha256": "9afbebdf5349e8610cf478f5cb7fc0254a973fdc62124c2c0b316e80accc446d"
     },
     {
       "path": "src/leaderboard.js",
       "bytes": 7480,
-      "sha256": "f2ce3ca6f4c8f0040d708eea2070b65b650b08bd44be64c9b4425ac498578e80"
+      "sha256": "51ebfa21cf205c2389c2534b5a804be3e57db0ae6619a58ade901298170f1702"
     },
     {
       "path": "src/main.js",
-      "bytes": 44500,
-      "sha256": "7c42a5e32af798d9ff546828e1da6e407d605acc10b29ba3ed48f79e1c43cdbb"
+      "bytes": 46062,
+      "sha256": "616c27a63304bd73ce155d7a19475569ce61f0bf2a99d8d3e22e55ab4a0dd5e8"
     },
     {
       "path": "src/name-entry.js",
@@ -223,13 +223,13 @@
     },
     {
       "path": "src/renderer.js",
-      "bytes": 60118,
-      "sha256": "6a9a9ab6ec3f0083685fc03f05a849bcfa9f453ff8da55215b79966e99903d9e"
+      "bytes": 64235,
+      "sha256": "d1ebb8e216523e5e81dc382e861f135e77a0bb0321c346f74ee73fc394c5e942"
     },
     {
       "path": "src/route.js",
       "bytes": 5759,
-      "sha256": "775910cdbfea6452a31c451fc0aa7bebd5daa8729ac4e40b9b692719004c4f02"
+      "sha256": "a69225c1c785d1306796e1bb14a7e829c2c798ff44323d51b05ffa972227ef77"
     },
     {
       "path": "src/runtime.js",
@@ -238,8 +238,8 @@
     },
     {
       "path": "styles.css",
-      "bytes": 27194,
-      "sha256": "89ecd6d28153ccc7c2d0b2d4257c5909aa20454feac8b65b11151196a19c1014"
+      "bytes": 27421,
+      "sha256": "45820328e47ebf48558cfd33996d0cb70c7ac1c6fdfa7711462a833b68b768cc"
     }
   ]
 }

@@ -28,7 +28,7 @@ const releaseRoot = path.join(repositoryRoot, "release", "over-the-moon");
 const sourceDirectory = path.join(htmlRoot, "src");
 
 assert.equal(PHASE, 10);
-assert.equal(BUILD_VERSION, "10.2.0");
+assert.equal(BUILD_VERSION, "10.3.1");
 assert.equal(RELEASE_CHANNEL, "production");
 assert.equal(ASSET_MANIFEST.length, 25);
 for (const asset of ASSET_MANIFEST) {

@@ -71,6 +71,13 @@ export const ROUTE = Object.freeze({
   maxActiveBalloons: 42,
 });
 
+export const LEADERBOARD_BALLOONS = Object.freeze({
+  limit: 10,
+  radius: 30,
+  colors: Object.freeze(["red", "blue", "green", "yellow"]),
+  xLanes: Object.freeze([96, 444, 174, 366, 270]),
+});
+
 export const UPPER_COSMOS_CHAPTERS = Object.freeze([
   Object.freeze({
     id: "kuiper-belt",

@@ -673,6 +673,7 @@ body[data-coarse="false"] #touch-controls {
 .dev-step-actions button,
 #dev-test-bird,
 #dev-test-saucer,
+#dev-test-gold,
 #dev-speed-toggle,
 #dev-warp {
   min-height: 50px;
@@ -737,6 +738,14 @@ body[data-coarse="false"] #touch-controls {
   min-height: 46px;
 }
 
+#dev-test-gold {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 10px;
+  border-color: rgb(255 225 128 / 70%);
+  color: #ffe180;
+}
+
 #dev-warp {
   width: 100%;
   min-height: 58px;
@@ -750,6 +759,7 @@ body[data-coarse="false"] #touch-controls {
 .dev-step-actions button:active,
 #dev-test-bird:active,
 #dev-test-saucer:active,
+#dev-test-gold:active,
 #dev-speed-toggle:active,
 #dev-warp:active {
   transform: translateY(1px);
@@ -759,6 +769,7 @@ body[data-coarse="false"] #touch-controls {
 .dev-step-actions button:disabled,
 #dev-test-bird:disabled,
 #dev-test-saucer:disabled,
+#dev-test-gold:disabled,
 #dev-speed-toggle:disabled {
   opacity: 0.38;
   cursor: default;
@@ -769,6 +780,7 @@ body[data-coarse="false"] #touch-controls {
 .dev-step-actions button:focus-visible,
 #dev-test-bird:focus-visible,
 #dev-test-saucer:focus-visible,
+#dev-test-gold:focus-visible,
 #dev-speed-toggle:focus-visible,
 #dev-warp:focus-visible {
   outline: 3px solid #ffe180;

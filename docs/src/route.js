@@ -3,7 +3,7 @@ import {
   GOALS,
   GOAL_MARKERS,
   ROUTE,
-} from "./game-config.js?v=10.2.0";
+} from "./game-config.js?v=10.3.1";
 
 const clamp = (value, minimum, maximum) =>
   Math.max(minimum, Math.min(maximum, value));

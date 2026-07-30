@@ -7,7 +7,7 @@ import {
   PLAYER,
   REENTRY,
   WORLD_FLOOR_Y,
-} from "./game-config.js?v=10.2.0";
+} from "./game-config.js?v=10.3.1";
 
 const COLORS = Object.freeze({
   ink: "#070a18",
@@ -1347,7 +1347,11 @@ export class ShellRenderer {
 
   #drawBalloons(ctx, game, assets) {
     const cameraY = game.camera.renderY;
-    for (const balloon of game.balloons) {
+    const balloons = [
+      ...game.balloons,
+      ...(game.leaderboardBalloons || []),
+    ];
+    for (const balloon of balloons) {
       const wobbleX = Math.sin(balloon.wobble) * 4;
       const wobbleY = Math.cos(balloon.wobble * 0.7) * 3;
       const screenX = balloon.x + wobbleX;
@@ -1357,6 +1361,16 @@ export class ShellRenderer {
       }
 
       if (balloon.alive) {
+        const isLeaderboardBalloon =
+          balloon.routeRole === "leaderboard";
+        if (isLeaderboardBalloon) {
+          this.#drawLeaderboardBalloonAura(
+            ctx,
+            balloon,
+            screenX,
+            screenY,
+          );
+        }
         const sprite = assets.get(`balloon-${balloon.color}`);
         if (sprite) {
           const scale = balloon.radius / 43;
@@ -1374,6 +1388,15 @@ export class ShellRenderer {
           ctx.beginPath();
           ctx.arc(screenX, screenY, balloon.radius, 0, Math.PI * 2);
           ctx.fill();
+        }
+
+        if (isLeaderboardBalloon) {
+          this.#drawLeaderboardBalloonMarker(
+            ctx,
+            balloon,
+            screenX,
+            screenY,
+          );
         }
 
         if (balloon.showHint) {
@@ -1403,6 +1426,130 @@ export class ShellRenderer {
         }
       }
     }
+  }
+
+  #drawLeaderboardBalloonAura(ctx, balloon, screenX, screenY) {
+    const pulse = 0.5 + Math.sin(balloon.wobble * 0.18) * 0.5;
+    const haloRadius = balloon.radius * (1.85 + pulse * 0.16);
+    const halo = ctx.createRadialGradient(
+      screenX,
+      screenY - balloon.radius * 0.16,
+      balloon.radius * 0.88,
+      screenX,
+      screenY - balloon.radius * 0.16,
+      haloRadius,
+    );
+    halo.addColorStop(0, "rgb(255 225 128 / 0%)");
+    halo.addColorStop(0.28, "rgb(255 225 128 / 13%)");
+    halo.addColorStop(0.68, "rgb(255 198 55 / 22%)");
+    halo.addColorStop(1, "rgb(255 198 55 / 0%)");
+
+    ctx.save();
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(
+      screenX,
+      screenY - balloon.radius * 0.16,
+      haloRadius,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+
+    ctx.strokeStyle = `rgb(255 225 128 / ${0.52 + pulse * 0.18})`;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = "rgb(255 201 60 / 76%)";
+    ctx.shadowBlur = 8 + pulse * 4;
+    ctx.beginPath();
+    ctx.ellipse(
+      screenX,
+      screenY - balloon.radius * 0.14,
+      balloon.radius * 1.34,
+      balloon.radius * 1.48,
+      0,
+      0,
+      Math.PI * 2,
+    );
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgb(255 196 45 / ${0.22 + pulse * 0.12})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(
+      screenX,
+      screenY - balloon.radius * 0.14,
+      balloon.radius * 1.58,
+      balloon.radius * 1.72,
+      0,
+      0,
+      Math.PI * 2,
+    );
+    ctx.stroke();
+
+    ctx.shadowBlur = 5;
+    ctx.strokeStyle = "rgb(255 211 76 / 82%)";
+    ctx.lineWidth = 1.7;
+    ctx.beginPath();
+    ctx.moveTo(screenX, screenY + balloon.radius * 0.82);
+    ctx.quadraticCurveTo(
+      screenX + 5,
+      screenY + balloon.radius * 1.55,
+      screenX + Math.sin(balloon.wobble) * 3,
+      screenY + balloon.radius * 2.52,
+    );
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  #drawLeaderboardBalloonMarker(ctx, balloon, screenX, screenY) {
+    const sparkleX = screenX + balloon.radius * 0.48;
+    const sparkleY = screenY - balloon.radius * 0.88;
+    const sparkleSize = 5 + (Math.sin(balloon.wobble * 1.7) + 1) * 2;
+    ctx.save();
+    ctx.translate(sparkleX, sparkleY);
+    ctx.fillStyle = "#fff8c9";
+    ctx.shadowColor = "#ffe180";
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.moveTo(0, -sparkleSize);
+    ctx.lineTo(sparkleSize * 0.28, -sparkleSize * 0.28);
+    ctx.lineTo(sparkleSize, 0);
+    ctx.lineTo(sparkleSize * 0.28, sparkleSize * 0.28);
+    ctx.lineTo(0, sparkleSize);
+    ctx.lineTo(-sparkleSize * 0.28, sparkleSize * 0.28);
+    ctx.lineTo(-sparkleSize, 0);
+    ctx.lineTo(-sparkleSize * 0.28, -sparkleSize * 0.28);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    const score = Math.max(
+      0,
+      Math.floor(Number(balloon.leaderboardScoreMeters) || 0),
+    );
+    const label =
+      `#${balloon.leaderboardRank} ${balloon.leaderboardInitials}` +
+      ` · ${score.toLocaleString()}m`;
+    ctx.font = "950 10px Inter, system-ui, sans-serif";
+    const labelWidth = Math.min(150, ctx.measureText(label).width + 18);
+    const labelY = screenY - balloon.radius - 45;
+    ctx.fillStyle = "rgb(5 10 27 / 88%)";
+    roundedRect(
+      ctx,
+      screenX - labelWidth * 0.5,
+      labelY - 11,
+      labelWidth,
+      23,
+      11,
+    );
+    ctx.fill();
+    ctx.strokeStyle = "rgb(255 225 128 / 78%)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffe180";
+    ctx.fillText(label, screenX, labelY + 0.5);
   }
 
   #drawPopEffects(ctx, game) {
@@ -1954,6 +2101,7 @@ export class ShellRenderer {
         yellow: "#f2cd4b",
         green: "#69ba68",
         blue: "#5aa8e8",
+        gold: "#ffd34c",
         goal: "#f5f5e2",
       }[name] || "#ef565e"
     );

@@ -8,6 +8,7 @@ import {
   GAME_WIDTH,
   GOALS,
   GOAL_MARKERS,
+  LEADERBOARD_BALLOONS,
   PLAYER,
   REENTRY,
   REFERENCE_HEIGHT,
@@ -16,9 +17,9 @@ import {
   SPEED_RAMP,
   UPPER_COSMOS_CHAPTERS,
   WORLD_FLOOR_Y,
-} from "./game-config.js?v=10.2.0";
-import { NameEntry } from "./name-entry.js?v=10.2.0";
-import { BalloonRoute, SeededRandom } from "./route.js?v=10.2.0";
+} from "./game-config.js?v=10.3.1";
+import { NameEntry } from "./name-entry.js?v=10.3.1";
+import { BalloonRoute, SeededRandom } from "./route.js?v=10.3.1";
 
 const BEST_HEIGHT_STORAGE_KEY = "over-the-moon.best-height";
 
@@ -112,6 +113,14 @@ const copyBalloon = (balloon, tutorialBalloonId) => ({
   alive: balloon.alive,
   poppedTimerSeconds: round(balloon.poppedTimer, 4),
   showHint: balloon.id === tutorialBalloonId && balloon.alive,
+  leaderboard:
+    balloon.routeRole === "leaderboard"
+      ? {
+          rank: balloon.leaderboardRank,
+          initials: balloon.leaderboardInitials,
+          scoreMeters: balloon.leaderboardScoreMeters,
+        }
+      : null,
 });
 
 const copyAmbientFlyby = (flyby) => {
@@ -156,6 +165,24 @@ const hydrateBalloon = (record) => ({
   alive: true,
   poppedTimer: 0,
 });
+
+const leaderboardBalloonIdentity = (entry, duplicateIndex) =>
+  [
+    "leaderboard-balloon",
+    entry.initials,
+    entry.score,
+    entry.timestamp,
+    duplicateIndex,
+  ].join("-");
+
+const leaderboardBalloonWobble = (identity) => {
+  let hash = 2166136261;
+  for (const character of identity) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ((hash >>> 0) / 4294967296) * Math.PI * 2;
+};
 
 const makeGoalMarkers = () =>
   GOAL_MARKERS.map((marker) => ({
@@ -255,9 +282,11 @@ export class PhaseSixGame {
     this.viewportFloorMargin = CAMERA.tallViewportFloorMargin;
     this.player = makePlayer();
     this.balloons = [];
+    this.leaderboardBalloons = [];
     this.balloonHistoryChunks = new Map();
     this.balloonHistoryCount = 0;
     this.poppedBalloonIds = new Set();
+    this.poppedLeaderboardBalloonIds = new Set();
     this.rehydratedBalloonCount = 0;
     this.activeRouteChunkCount = 0;
     this.debugBalloonOverride = false;
@@ -311,9 +340,11 @@ export class PhaseSixGame {
     this.runSeed = Number(seed) >>> 0 || 1;
     this.player = makePlayer();
     this.balloons = [];
+    this.leaderboardBalloons = [];
     this.balloonHistoryChunks = new Map();
     this.balloonHistoryCount = 0;
     this.poppedBalloonIds = new Set();
+    this.poppedLeaderboardBalloonIds = new Set();
     this.rehydratedBalloonCount = 0;
     this.activeRouteChunkCount = 0;
     this.debugBalloonOverride = false;
@@ -363,6 +394,7 @@ export class PhaseSixGame {
     this.mode = "playing";
     this.cameraY = this.#baseCameraY();
     this.previousCameraY = this.cameraY;
+    this.#syncLeaderboardBalloons();
     this.#maintainRoute();
     return this.runSeed;
   }
@@ -415,10 +447,14 @@ export class PhaseSixGame {
     for (const balloon of this.balloons) {
       balloon.wobble += dt * 4 * this.speedMultiplier;
     }
+    for (const balloon of this.leaderboardBalloons) {
+      balloon.wobble += dt * 4 * this.speedMultiplier;
+    }
 
-    const hitBalloon = this.balloons.find(
-      (balloon) => balloon.alive && this.#swordHitsBalloon(balloon),
-    );
+    const hitBalloon = [
+      ...this.balloons,
+      ...this.leaderboardBalloons,
+    ].find((balloon) => balloon.alive && this.#swordHitsBalloon(balloon));
     if (hitBalloon) {
       this.#popBalloon(hitBalloon);
     } else {
@@ -431,6 +467,11 @@ export class PhaseSixGame {
     }
 
     for (const balloon of this.balloons) {
+      if (balloon.poppedTimer > 0) {
+        balloon.poppedTimer += dt;
+      }
+    }
+    for (const balloon of this.leaderboardBalloons) {
       if (balloon.poppedTimer > 0) {
         balloon.poppedTimer += dt;
       }
@@ -475,6 +516,9 @@ export class PhaseSixGame {
     const balloonSnapshots = this.balloons.map((balloon) =>
       copyBalloon(balloon, this.tutorialBalloonId),
     );
+    const leaderboardBalloonSnapshots = this.leaderboardBalloons.map(
+      (balloon) => copyBalloon(balloon, null),
+    );
     return {
       mode: this.mode,
       runId: this.runId,
@@ -508,6 +552,13 @@ export class PhaseSixGame {
       balloonCount: this.balloons.length,
       aliveBalloonCount: this.balloons.filter((balloon) => balloon.alive)
         .length,
+      leaderboardBalloons: leaderboardBalloonSnapshots,
+      leaderboardBalloonCount: this.leaderboardBalloons.length,
+      aliveLeaderboardBalloonCount: this.leaderboardBalloons.filter(
+        (balloon) => balloon.alive,
+      ).length,
+      poppedLeaderboardBalloonCount:
+        this.poppedLeaderboardBalloonIds.size,
       peakActiveBalloonCount: this.peakActiveBalloonCount,
       culledBalloonCount: this.culledBalloonCount,
       totalPopped: this.totalPopped,
@@ -668,6 +719,14 @@ export class PhaseSixGame {
         ambientFlybysImplemented: true,
         chapters: UPPER_COSMOS_CHAPTERS.map((chapter) => ({ ...chapter })),
       },
+      leaderboardBalloonFeature: {
+        implemented: true,
+        interactive: true,
+        baseColors: [...LEADERBOARD_BALLOONS.colors],
+        goldAura: true,
+        comboBehavior: "displayed-color",
+        exactRecordedHeights: true,
+      },
     };
   }
 
@@ -692,6 +751,9 @@ export class PhaseSixGame {
         ...balloon,
         showHint:
           balloon.id === this.tutorialBalloonId && balloon.alive,
+      })),
+      leaderboardBalloons: this.leaderboardBalloons.map((balloon) => ({
+        ...balloon,
       })),
       goalMarkers: this.goalMarkers.map((marker) => ({ ...marker })),
       popEffects: this.popEffects.map((effect) => ({ ...effect })),
@@ -845,6 +907,82 @@ export class PhaseSixGame {
     };
   }
 
+  debugWarpBelowLeaderboardBalloon(rank = 1, balloonsBelow = 3) {
+    const requestedRank = clamp(
+      Math.floor(Number(rank) || 1),
+      1,
+      LEADERBOARD_BALLOONS.limit,
+    );
+    const leaderboardBalloon = this.leaderboardBalloons.find(
+      (balloon) => balloon.leaderboardRank === requestedRank,
+    );
+    if (!leaderboardBalloon) {
+      throw new Error(`Leaderboard balloon #${requestedRank} is unavailable.`);
+    }
+
+    const requestedDepth = clamp(
+      Math.floor(Number(balloonsBelow) || 3),
+      1,
+      6,
+    );
+    this.cameraY = Math.min(
+      this.#baseCameraY(),
+      leaderboardBalloon.y - 120,
+    );
+    this.previousCameraY = this.cameraY;
+    this.#maintainRoute();
+
+    const routeBalloonsBelow = this.balloons
+      .filter(
+        (balloon) =>
+          balloon.alive &&
+          balloon.routeRole === "main" &&
+          balloon.y > leaderboardBalloon.y,
+      )
+      .sort((a, b) => a.y - b.y);
+    const targetBalloon =
+      routeBalloonsBelow[
+        Math.min(requestedDepth - 1, routeBalloonsBelow.length - 1)
+      ] || null;
+    const fallbackY =
+      leaderboardBalloon.y + ROUTE.spacingMin * requestedDepth;
+
+    this.player.x = targetBalloon?.x ?? leaderboardBalloon.x;
+    this.player.y = targetBalloon
+      ? targetBalloon.y -
+        targetBalloon.radius -
+        PLAYER.height * 0.5 -
+        10
+      : fallbackY;
+    this.player.previousX = this.player.x;
+    this.player.previousY = this.player.y;
+    this.player.vx = 0;
+    this.player.vy = 0;
+    this.player.onGround = false;
+    this.player.slashTimer = 0;
+    this.player.cooldown = 0;
+    this.#updateSpeedMultiplier();
+
+    const playerCameraY =
+      this.player.y - this.viewportHeight * CAMERA.followBottomRatio;
+    const markerCameraY = leaderboardBalloon.y - 120;
+    this.cameraY = Math.min(
+      this.#baseCameraY(),
+      playerCameraY,
+      markerCameraY,
+    );
+    this.previousCameraY = this.cameraY;
+    this.#maintainRoute();
+
+    return {
+      leaderboardBalloon: copyBalloon(leaderboardBalloon, null),
+      requestedBalloonsBelow: requestedDepth,
+      targetBalloon: targetBalloon
+        ? copyBalloon(targetBalloon, this.tutorialBalloonId)
+        : null,
+    };
+  }
+
   debugSetCombo(color, streak) {
     this.hitComboColor = color || null;
     this.hitComboStreak = Math.max(0, Math.floor(Number(streak) || 0));
@@ -921,6 +1059,7 @@ export class PhaseSixGame {
       this.savedBestHeight,
       Math.floor(Number(this.leaderboard.localBest) || 0),
     );
+    this.#syncLeaderboardBalloons();
   }
 
   isNameEntryActive() {
@@ -1045,12 +1184,17 @@ export class PhaseSixGame {
   #popBalloon(balloon) {
     balloon.alive = false;
     balloon.poppedTimer = 0.001;
-    if (!this.debugBalloonOverride) {
+    const isLeaderboardBalloon = balloon.routeRole === "leaderboard";
+    if (isLeaderboardBalloon) {
+      this.poppedLeaderboardBalloonIds.add(balloon.id);
+    } else if (!this.debugBalloonOverride) {
       this.poppedBalloonIds.add(balloon.id);
     }
     this.hasPoppedBalloon = true;
     this.totalPopped += 1;
 
+    let bounceSpeed = PLAYER.bounceSpeed;
+    let reward = null;
     if (balloon.color === this.hitComboColor) {
       this.hitComboStreak += 1;
     } else {
@@ -1061,9 +1205,6 @@ export class PhaseSixGame {
       this.bestComboStreak,
       this.hitComboStreak,
     );
-
-    let bounceSpeed = PLAYER.bounceSpeed;
-    let reward = null;
     if (this.hitComboStreak >= COMBO.comboStreak) {
       bounceSpeed = COMBO.comboBounceSpeed;
       reward = "combo!";
@@ -1077,7 +1218,7 @@ export class PhaseSixGame {
       y: balloon.y,
       age: 0,
       color: balloon.color,
-      boosted: Boolean(reward),
+      boosted: Boolean(reward) || isLeaderboardBalloon,
     });
     if (reward) {
       this.comboFeedbacks.push({
@@ -1473,6 +1614,61 @@ export class PhaseSixGame {
     if (this.ambientFlybyTimers[eligibleType] <= 0) {
       this.#spawnAmbientFlyby(eligibleType);
     }
+  }
+
+  #syncLeaderboardBalloons() {
+    const currentById = new Map(
+      this.leaderboardBalloons.map((balloon) => [balloon.id, balloon]),
+    );
+    const duplicates = new Map();
+    const entries = (this.leaderboard.topScores || [])
+      .map((entry) => ({
+        initials: String(entry?.initials || "")
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "")
+          .slice(0, 3),
+        score: Math.max(0, Math.floor(Number(entry?.score) || 0)),
+        timestamp: Math.max(0, Math.floor(Number(entry?.timestamp) || 0)),
+      }))
+      .filter((entry) => entry.initials.length === 3 && entry.score > 0)
+      .slice(0, LEADERBOARD_BALLOONS.limit);
+
+    this.leaderboardBalloons = entries.map((entry, index) => {
+      const duplicateKey = [
+        entry.initials,
+        entry.score,
+        entry.timestamp,
+      ].join("-");
+      const duplicateIndex = duplicates.get(duplicateKey) || 0;
+      duplicates.set(duplicateKey, duplicateIndex + 1);
+      const id = leaderboardBalloonIdentity(entry, duplicateIndex);
+      const current = currentById.get(id);
+      const popped = this.poppedLeaderboardBalloonIds.has(id);
+      return {
+        id,
+        x:
+          current?.x ??
+          LEADERBOARD_BALLOONS.xLanes[
+            index % LEADERBOARD_BALLOONS.xLanes.length
+          ],
+        y: WORLD_FLOOR_Y - entry.score * 10,
+        radius:
+          LEADERBOARD_BALLOONS.radius +
+          (index === 0 ? 4 : index < 3 ? 2 : 0),
+        color:
+          LEADERBOARD_BALLOONS.colors[
+            index % LEADERBOARD_BALLOONS.colors.length
+          ],
+        wobble: current?.wobble ?? leaderboardBalloonWobble(id),
+        routeRole: "leaderboard",
+        landmarkApproach: null,
+        alive: !popped,
+        poppedTimer: popped ? current?.poppedTimer || 1 : 0,
+        leaderboardRank: index + 1,
+        leaderboardInitials: entry.initials,
+        leaderboardScoreMeters: entry.score,
+      };
+    });
   }
 
   #maintainRoute() {

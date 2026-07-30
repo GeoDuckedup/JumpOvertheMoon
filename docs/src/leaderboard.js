@@ -1,7 +1,7 @@
 import {
   BLOCKED_INITIALS,
   sanitizeInitials,
-} from "./name-entry.js?v=10.2.0";
+} from "./name-entry.js?v=10.3.1";
 
 const DATABASE_URL =
   "https://over-the-moon-14b50-default-rtdb.firebaseio.com";

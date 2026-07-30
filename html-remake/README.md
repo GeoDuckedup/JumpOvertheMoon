@@ -23,8 +23,9 @@ historical behavior and shared-art reference.
   belly-up death pose, and subtle bird/saucer flybys
 - Phase 10: complete — production cache graph, offline shell, public/DEV
   isolation, full-climb fairness audit, reproducible hashed package, and the
-  `10.2.0` shipping build with the desktop fullscreen button
-  removed and slightly elevated centered camera framing
+  `10.3.1` shipping build with four-color, gold-aura leaderboard balloons,
+  the desktop fullscreen button removed, and slightly elevated centered
+  camera framing
 
 ## GitHub Pages shipping build
 

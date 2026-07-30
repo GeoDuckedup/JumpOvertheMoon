@@ -31,20 +31,19 @@ another landmark.
   highest among completed runs.
 - The displayed maximum may be slightly adjusted, if needed, so the recorded
   finish height aligns cleanly with the Black Hole collision and cinematic.
-- Each leaderboard score may be represented in the world by a special
-  noninteractive balloon placed at that player's recorded height. These
-  leaderboard balloons should be visually distinct from playable balloons and
-  must not interfere with route generation, collision, or the active-entity
-  limit.
+- **Promoted independently in build 10.3.1:** each top-ten score is represented
+  at its exact recorded height by a normal red, blue, green, or yellow balloon
+  surrounded by a distinct animated gold aura and labeled with rank and
+  initials. These are real optional gameplay balloons: the player can slash,
+  pop, bounce from them, and continue the combo matching their displayed core
+  color. They do not replace or alter the safe generated route or count against
+  its active-entity limit.
 
 ### Questions to resolve before prototyping
 
 - Should completed runs always rank above every incomplete run?
 - Should the timer stop on first Black Hole contact or when the cow fully
   disappears?
-- What should distinguish leaderboard balloons: initials, rank, color, or a
-  combination?
-- Should players be able to hide leaderboard balloons?
 - Should the leaderboard show one combined ranking or separate `HEIGHT` and
   `COMPLETION TIME` views?
 
@@ -112,8 +111,10 @@ instead of ending the run.
 - Scores at or below 18,500 m belong to the normal world.
 - Scores above 18,500 m belong at the corresponding depth in the inverted
   realm.
-- If leaderboard balloons are later adopted, each should appear in the realm
-  containing its score and remain noninteractive.
+- Four-color, gold-aura leaderboard balloons currently appear in the normal
+  realm at their recorded height. If the inverted realm is adopted later,
+  scores above the portal threshold would need to move into that realm while
+  keeping the established interactive behavior.
 
 ### Questions to resolve before prototyping
 
