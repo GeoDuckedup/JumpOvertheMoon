@@ -1,5 +1,5 @@
-import { AssetLoader } from "./assets.js?v=10.3.1";
-import { GameAudio } from "./audio.js?v=10.3.1";
+import { AssetLoader } from "./assets.js?v=16.0.2";
+import { GameAudio } from "./audio.js?v=16.0.2";
 import {
   ASSET_MANIFEST,
   BUILD_VERSION,
@@ -9,15 +9,20 @@ import {
   RUNTIME_CONFIG,
   detectInitialQuality,
   resolveQualityProfile,
-} from "./config.js?v=10.3.1";
-import { CAMERA } from "./game-config.js?v=10.3.1";
-import { OverTheMoonGame } from "./game.js?v=10.3.1";
-import { InputController } from "./input.js?v=10.3.1";
-import { LayoutController } from "./layout.js?v=10.3.1";
-import { LeaderboardService } from "./leaderboard.js?v=10.3.1";
-import { AdaptiveQualityController } from "./performance.js?v=10.3.1";
-import { ShellRenderer } from "./renderer.js?v=10.3.1";
-import { FixedStepRuntime } from "./runtime.js?v=10.3.1";
+} from "./config.js?v=16.0.2";
+import {
+  CAMERA,
+  PLAY_MODES,
+  RIVAL_CHASE,
+  RIVAL_FOUNDATION,
+} from "./game-config.js?v=16.0.2";
+import { OverTheMoonGame } from "./game.js?v=16.0.2";
+import { InputController } from "./input.js?v=16.0.2";
+import { LayoutController } from "./layout.js?v=16.0.2";
+import { LeaderboardService } from "./leaderboard.js?v=16.0.2";
+import { AdaptiveQualityController } from "./performance.js?v=16.0.2";
+import { ShellRenderer } from "./renderer.js?v=16.0.2";
+import { FixedStepRuntime } from "./runtime.js?v=16.0.2";
 
 const root = document.querySelector("#viewport-root");
 const stage = document.querySelector("#game-stage");
@@ -36,9 +41,21 @@ const devSpeedStatus = document.querySelector("#dev-speed-status");
 const devTestBird = document.querySelector("#dev-test-bird");
 const devTestSaucer = document.querySelector("#dev-test-saucer");
 const devTestGold = document.querySelector("#dev-test-gold");
+const devStartClassic = document.querySelector("#dev-start-classic");
+const devStartRival = document.querySelector("#dev-start-rival");
+const devRivalLeft = document.querySelector("#dev-rival-left");
+const devRivalRight = document.querySelector("#dev-rival-right");
+const devRivalToggle = document.querySelector("#dev-rival-toggle");
+const devRivalSpeed = document.querySelector("#dev-rival-speed");
+const devRivalAttack = document.querySelector("#dev-rival-attack");
+const devRivalBoost = document.querySelector("#dev-rival-boost");
+const devRivalDive = document.querySelector("#dev-rival-dive");
+const devRivalCounter = document.querySelector("#dev-rival-counter");
+const devRivalStatus = document.querySelector("#dev-rival-status");
 const devWarp = document.querySelector("#dev-warp");
 const startOverlay = document.querySelector("#start-overlay");
 const startButton = document.querySelector("#start-button");
+const cowVsCatButton = document.querySelector("#cow-vs-cat-button");
 const howToPlayButton = document.querySelector("#how-to-play-button");
 const menuLeaderboardButton = document.querySelector(
   "#menu-leaderboard-button",
@@ -55,7 +72,14 @@ const touchActionLabel = document.querySelector(".touch-action-label");
 const deathActions = document.querySelector("#death-actions");
 const deathPrimary = document.querySelector("#death-primary");
 const deathRetry = document.querySelector("#death-retry");
+const deathMenu = document.querySelector("#death-menu");
 const leaderboardPanel = document.querySelector("#leaderboard-panel");
+const leaderboardTabClassic = document.querySelector(
+  "#leaderboard-tab-classic",
+);
+const leaderboardTabRival = document.querySelector(
+  "#leaderboard-tab-rival",
+);
 const leaderboardRunSummary = document.querySelector(
   "#leaderboard-run-summary",
 );
@@ -68,9 +92,13 @@ const leaderboardEntryStatus = document.querySelector(
 );
 const leaderboardList = document.querySelector("#leaderboard-list");
 const leaderboardEmpty = document.querySelector("#leaderboard-empty");
+const leaderboardScoresTitle = document.querySelector(
+  "#leaderboard-scores-title",
+);
 const leaderboardActions = document.querySelector("#leaderboard-actions");
 const leaderboardBack = document.querySelector("#leaderboard-back");
 const leaderboardRetry = document.querySelector("#leaderboard-retry");
+const leaderboardMenu = document.querySelector("#leaderboard-menu");
 const rotateOverlay = document.querySelector("#rotate-overlay");
 const appModeOverlay = document.querySelector("#app-mode-overlay");
 const appModeClose = document.querySelector("#app-mode-close");
@@ -95,9 +123,21 @@ if (
     devTestBird &&
     devTestSaucer &&
     devTestGold &&
+    devStartClassic &&
+    devStartRival &&
+    devRivalLeft &&
+    devRivalRight &&
+    devRivalToggle &&
+    devRivalSpeed &&
+    devRivalAttack &&
+    devRivalBoost &&
+    devRivalDive &&
+    devRivalCounter &&
+    devRivalStatus &&
     devWarp &&
     startOverlay &&
     startButton &&
+    cowVsCatButton &&
     howToPlayButton &&
     menuLeaderboardButton &&
     howToPlayOverlay &&
@@ -112,7 +152,10 @@ if (
     deathActions &&
     deathPrimary &&
     deathRetry &&
+    deathMenu &&
     leaderboardPanel &&
+    leaderboardTabClassic &&
+    leaderboardTabRival &&
     leaderboardRunSummary &&
     leaderboardRunScore &&
     leaderboardEntry &&
@@ -121,9 +164,11 @@ if (
     leaderboardEntryStatus &&
     leaderboardList &&
     leaderboardEmpty &&
+    leaderboardScoresTitle &&
     leaderboardActions &&
     leaderboardBack &&
     leaderboardRetry &&
+    leaderboardMenu &&
     rotateOverlay &&
     appModeOverlay &&
     appModeClose &&
@@ -178,19 +223,33 @@ const initialQuality = detectInitialQuality();
 const loader = new AssetLoader(ASSET_MANIFEST);
 const renderer = new ShellRenderer(canvas);
 const audio = new GameAudio();
-const leaderboard = new LeaderboardService();
+const leaderboards = Object.freeze({
+  [PLAY_MODES.CLASSIC]: new LeaderboardService({
+    playMode: PLAY_MODES.CLASSIC,
+  }),
+  [PLAY_MODES.COW_VS_CAT]: new LeaderboardService({
+    playMode: PLAY_MODES.COW_VS_CAT,
+  }),
+});
+const leaderboardFor = (playMode) =>
+  leaderboards[playMode] || leaderboards[PLAY_MODES.CLASSIC];
 const game = new OverTheMoonGame({
-  leaderboard: leaderboard.getSnapshot(),
+  leaderboards: Object.fromEntries(
+    Object.entries(leaderboards).map(([playMode, service]) => [
+      playMode,
+      service.getSnapshot(),
+    ]),
+  ),
   onEvent: (name, snapshot) => {
     audio.play(name);
     if (name === "gameOver") {
       audio.setAltitude(snapshot.heightMeters, "gameover");
-      leaderboard.refresh({ force: true });
+      leaderboardFor(snapshot.playMode).refresh({ force: true });
       liveStatus.textContent = snapshot.newBest
-        ? `Run over at ${snapshot.finalScoreMeters} meters. New local best.`
-        : `Run over at ${snapshot.finalScoreMeters} meters.`;
+        ? `${snapshot.playMode} run over at ${snapshot.finalScoreMeters} meters. New local best.`
+        : `${snapshot.playMode} run over at ${snapshot.finalScoreMeters} meters.`;
     } else if (name === "scoreSubmit") {
-      leaderboard.submit(
+      leaderboardFor(snapshot.playMode).submit(
         snapshot.nameEntry.initials,
         snapshot.finalScoreMeters,
       );
@@ -240,6 +299,7 @@ const state = {
   starting: false,
   menu: {
     view: "main",
+    leaderboardMode: PLAY_MODES.CLASSIC,
   },
   devTools: {
     enabled: devModeEnabled,
@@ -253,6 +313,7 @@ const state = {
     speedLockedAtOne: false,
     lastWarp: null,
     lastFlyby: null,
+    lastModeStart: null,
   },
   display: {
     fullscreenSupported: fullscreenApiAvailable && !isIPhone,
@@ -308,6 +369,7 @@ let leaderboardRowsSignature = "";
 const syncLeaderboardRows = (snapshot) => {
   const rows = (snapshot?.topScores || []).slice(0, 10);
   const signature = JSON.stringify({
+    playMode: snapshot?.playMode || PLAY_MODES.CLASSIC,
     rows: rows.map(({ initials, score }) => [initials, score]),
     localInitials: snapshot?.localInitials || "",
     localBest: snapshot?.localBest || 0,
@@ -364,21 +426,40 @@ const submittedStatusText = (leaderboardState) => {
   return "SCORE SAVED";
 };
 
-const setMenuView = (view) => {
+const normalizeLeaderboardMode = (playMode) =>
+  playMode === PLAY_MODES.COW_VS_CAT
+    ? PLAY_MODES.COW_VS_CAT
+    : PLAY_MODES.CLASSIC;
+
+const setMenuView = (
+  view,
+  requestedLeaderboardMode = state.menu.leaderboardMode,
+) => {
   if (game.mode !== "menu") {
     return false;
   }
   const nextView = ["main", "how-to-play", "leaderboard"].includes(view)
     ? view
     : "main";
-  if (state.menu.view === nextView) {
+  const nextLeaderboardMode = normalizeLeaderboardMode(
+    requestedLeaderboardMode,
+  );
+  if (
+    state.menu.view === nextView &&
+    (nextView !== "leaderboard" ||
+      state.menu.leaderboardMode === nextLeaderboardMode)
+  ) {
     return false;
   }
   state.menu.view = nextView;
+  if (nextView === "leaderboard") {
+    state.menu.leaderboardMode = nextLeaderboardMode;
+  }
   input?.clear();
   if (nextView === "leaderboard") {
-    leaderboard.refresh({ force: true });
-    liveStatus.textContent = "Showing the shared leaderboard.";
+    leaderboardFor(state.menu.leaderboardMode).refresh({ force: true });
+    liveStatus.textContent =
+      `Showing the ${state.menu.leaderboardMode} leaderboard.`;
   } else if (nextView === "how-to-play") {
     liveStatus.textContent = "Showing how to play.";
   } else {
@@ -394,6 +475,37 @@ const setMenuView = (view) => {
     startButton.focus({ preventScroll: true });
   }
   return true;
+};
+
+const selectLeaderboardMode = (playMode) => {
+  const nextMode = normalizeLeaderboardMode(playMode);
+  const runLeaderboardOpen =
+    game.mode === "gameover" &&
+    game.getSnapshot().deathScreen?.view === "leaderboard";
+  const menuLeaderboardOpen =
+    game.mode === "menu" && state.menu.view === "leaderboard";
+  if (!runLeaderboardOpen && !menuLeaderboardOpen) {
+    return false;
+  }
+  if (state.menu.leaderboardMode === nextMode) {
+    return false;
+  }
+  state.menu.leaderboardMode = nextMode;
+  leaderboardFor(nextMode).refresh({ force: true });
+  liveStatus.textContent = `Showing the ${nextMode} leaderboard.`;
+  audio.play("ui");
+  render();
+  return true;
+};
+
+const returnToMainMenu = () => {
+  const changed = game.returnToMenu();
+  state.menu.view = "main";
+  input?.clear();
+  liveStatus.textContent = "Main menu.";
+  render();
+  startButton.focus({ preventScroll: true });
+  return changed;
 };
 
 const syncDevToolsUi = () => {
@@ -440,6 +552,82 @@ const syncDevToolsUi = () => {
     ? "ON · FIXED 1×"
     : "OFF · NORMAL RAMP";
   setDisabled(devSpeedToggle, state.starting);
+  setDisabled(devStartClassic, !state.assetsReady || state.starting);
+  setDisabled(devStartRival, !state.assetsReady || state.starting);
+  const rivalRunActive =
+    state.game?.playMode === PLAY_MODES.COW_VS_CAT &&
+    state.game?.rival?.present;
+  setDisabled(
+    devRivalLeft,
+    !state.assetsReady || state.starting || !rivalRunActive,
+  );
+  setDisabled(
+    devRivalRight,
+    !state.assetsReady || state.starting || !rivalRunActive,
+  );
+  setDisabled(
+    devRivalToggle,
+    !state.assetsReady || state.starting || !rivalRunActive,
+  );
+  setDisabled(
+    devRivalSpeed,
+    !state.assetsReady || state.starting || !rivalRunActive,
+  );
+  setDisabled(
+    devRivalAttack,
+    !state.assetsReady || state.starting || !rivalRunActive,
+  );
+  setDisabled(
+    devRivalBoost,
+    !state.assetsReady || state.starting || !rivalRunActive,
+  );
+  setDisabled(
+    devRivalDive,
+    !state.assetsReady || state.starting || !rivalRunActive,
+  );
+  setDisabled(
+    devRivalCounter,
+    !state.assetsReady || state.starting || !rivalRunActive,
+  );
+  const rival = state.game?.rival;
+  const rivalInGrace = rival?.state === "grace";
+  devRivalToggle.textContent = !rivalRunActive || rivalInGrace
+    ? "RELEASE CAT"
+    : rival?.frozen
+      ? "RESUME CAT"
+      : "FREEZE CAT";
+  devRivalToggle.setAttribute(
+    "aria-pressed",
+    String(Boolean(rival?.frozen)),
+  );
+  devRivalSpeed.textContent = `CHASE ${(rival?.chaseSpeedScale || 1).toFixed(2)}×`;
+  if (!rivalRunActive) {
+    devRivalStatus.textContent = "START COW VS CAT TO TEST THE CHASE";
+  } else if (rivalInGrace) {
+    devRivalStatus.textContent =
+      `ENTERING IN ${rival.graceRemainingSeconds.toFixed(1)}s · ` +
+      "NO COLLISION · SCORES ISOLATED";
+  } else {
+    const attackLabel = rival.attack.state.toUpperCase();
+    const rubberBandLabel = rival.rubberBand.active
+      ? ` · CATCH-UP ${rival.rubberBand.verticalScale.toFixed(2)}×`
+      : rival.rubberBand.pending
+        ? " · CATCH-UP AFTER ATTACK"
+        : "";
+    const pressure = rival.verticalPressure;
+    const pressureLabel = pressure
+      ? ` · ${pressure.relation.toUpperCase()} ${Math.abs(Math.round(pressure.leadAboveCow))}PX`
+      : "";
+    const holdLabel = pressure?.postOvertakeHoldRemainingSeconds > 0
+      ? ` · OPEN ${pressure.postOvertakeHoldRemainingSeconds.toFixed(1)}S`
+      : "";
+    devRivalStatus.textContent =
+      `${rival.state.toUpperCase()} · ${attackLabel} · ` +
+      `${rival.stats.bowSwipes} SWIPES · ` +
+      `${rival.stats.verticalBoosts} BOOSTS / ${rival.stats.overtakes} OVERTAKES · ` +
+      `${rival.stats.fiddleDrops} DROPS · ${rival.stats.cowHits} HITS · ` +
+      `${rival.stats.balloonPops} POPS${pressureLabel}${holdLabel}${rubberBandLabel}`;
+  }
   setDisabled(devTestBird, !state.assetsReady || state.starting);
   setDisabled(devTestSaucer, !state.assetsReady || state.starting);
   setDisabled(
@@ -480,18 +668,42 @@ const syncUi = () => {
     : state.assetsReady
       ? "OVER THE MOON"
       : "LOADING…";
+  setDisabled(cowVsCatButton, !state.assetsReady || state.starting);
   setDisabled(menuLeaderboardButton, !state.assetsReady || state.starting);
 
   setHidden(touchControls, !state.touchControlsVisible);
   const runLeaderboardOpen =
     gameOver && state.game.deathScreen?.view === "leaderboard";
   const leaderboardOpen = runLeaderboardOpen || menuLeaderboardOpen;
+  const selectedLeaderboardMode = normalizeLeaderboardMode(
+    state.menu.leaderboardMode,
+  );
+  const activeRunMode = normalizeLeaderboardMode(state.game.playMode);
+  const selectedLeaderboard =
+    state.game.leaderboards?.[selectedLeaderboardMode] ||
+    leaderboardFor(selectedLeaderboardMode).getSnapshot();
   const showLeaderboardEntry =
     runLeaderboardOpen &&
+    selectedLeaderboardMode === activeRunMode &&
     state.game.deathScreen?.qualifiesForLeaderboard;
   setHidden(leaderboardPanel, !leaderboardOpen);
   setHidden(leaderboardEntry, !showLeaderboardEntry);
-  setHidden(leaderboardRunSummary, menuLeaderboardOpen);
+  setHidden(
+    leaderboardRunSummary,
+    menuLeaderboardOpen || selectedLeaderboardMode !== activeRunMode,
+  );
+  leaderboardTabClassic.setAttribute(
+    "aria-selected",
+    String(selectedLeaderboardMode === PLAY_MODES.CLASSIC),
+  );
+  leaderboardTabRival.setAttribute(
+    "aria-selected",
+    String(selectedLeaderboardMode === PLAY_MODES.COW_VS_CAT),
+  );
+  leaderboardScoresTitle.textContent =
+    selectedLeaderboardMode === PLAY_MODES.COW_VS_CAT
+      ? "TOP RIVALS"
+      : "TOP CLIMBERS";
   leaderboardActions.dataset.menu = String(menuLeaderboardOpen);
   leaderboardBack.textContent = menuLeaderboardOpen
     ? "BACK TO MENU"
@@ -501,6 +713,7 @@ const syncUi = () => {
     menuLeaderboardOpen ? "Back to main menu" : "Back to results",
   );
   setHidden(leaderboardRetry, menuLeaderboardOpen);
+  setHidden(leaderboardMenu, menuLeaderboardOpen);
   if (leaderboardOpen) {
     if (runLeaderboardOpen) {
       const scoreLabel = `${state.game.finalScoreMeters} m`;
@@ -508,14 +721,14 @@ const syncUi = () => {
         leaderboardRunScore.textContent = scoreLabel;
       }
     }
-    syncLeaderboardRows(state.game.leaderboard);
+    syncLeaderboardRows(selectedLeaderboard);
   }
   if (showLeaderboardEntry) {
-    const runKey = String(state.game.runId);
+    const runKey = `${activeRunMode}:${state.game.runId}`;
     if (leaderboardEntry.dataset.runId !== runKey) {
       leaderboardEntry.dataset.runId = runKey;
       leaderboardInitials.value = cleanInitialsInput(
-        state.game.leaderboard.localInitials || "AAA",
+        selectedLeaderboard.localInitials || "AAA",
       );
       leaderboardEntry.dataset.invalid = "false";
       leaderboardEntryStatus.textContent = "A–Z / 0–9 · THREE CHARACTERS";
@@ -531,7 +744,7 @@ const syncUi = () => {
       leaderboardSubmit.textContent = submitLabel;
     }
     if (submitted) {
-      const scoreStatus = submittedStatusText(state.game.leaderboard);
+      const scoreStatus = submittedStatusText(selectedLeaderboard);
       if (leaderboardEntryStatus.textContent !== scoreStatus) {
         leaderboardEntryStatus.textContent = scoreStatus;
       }
@@ -541,11 +754,18 @@ const syncUi = () => {
   }
   setHidden(deathActions, !gameOver || nameEntryActive || runLeaderboardOpen);
   if (gameOver && !nameEntryActive && !runLeaderboardOpen) {
+    const rivalRun = state.game.playMode === PLAY_MODES.COW_VS_CAT;
     deathActions.dataset.view = "summary";
+    setHidden(deathPrimary, false);
     deathPrimary.textContent = "VIEW LEADERBOARD";
     deathPrimary.setAttribute("aria-label", "View leaderboard");
-    deathRetry.textContent = "CLIMB AGAIN";
-    deathRetry.setAttribute("aria-label", "Climb again");
+    deathRetry.textContent = rivalRun ? "RIVAL AGAIN" : "CLIMB AGAIN";
+    deathRetry.setAttribute(
+      "aria-label",
+      rivalRun ? "Restart Cow vs Cat" : "Climb again",
+    );
+  } else if (!gameOver) {
+    setHidden(deathPrimary, false);
   }
   const actionLabel = gameOver
     ? game.isNameEntryActive()
@@ -705,7 +925,7 @@ const previewDevAmbientFlyby = async (type) => {
   if (game.mode !== "playing") {
     game.start();
     input.clear();
-    leaderboard.retryPending();
+    leaderboardFor(game.getSnapshot().playMode).retryPending();
   }
   const flyby = game.debugSpawnAmbientFlyby(type);
   state.devTools.lastFlyby = flyby
@@ -728,30 +948,223 @@ const previewDevAmbientFlyby = async (type) => {
   return Boolean(flyby);
 };
 
-leaderboard.setOnChange((snapshot) => {
-  game.setLeaderboard(snapshot);
-  render();
-});
+for (const [playMode, service] of Object.entries(leaderboards)) {
+  service.setOnChange((snapshot) => {
+    game.setLeaderboard(playMode, snapshot);
+    render();
+  });
+}
 
-const startGame = async (source = "button", seed) => {
-  if (!state.assetsReady || state.starting || game.mode === "playing") {
+const startGame = async (
+  source = "button",
+  seed,
+  requestedPlayMode = null,
+) => {
+  const devModeReplacement =
+    state.devTools.enabled && requestedPlayMode !== null;
+  if (
+    !state.assetsReady ||
+    state.starting ||
+    (game.mode === "playing" && !devModeReplacement)
+  ) {
     return false;
   }
   const retrying = game.mode === "gameover";
+  const previousPlayMode = game.getSnapshot().playMode;
+  const playMode =
+    requestedPlayMode ||
+    (retrying ? previousPlayMode : PLAY_MODES.CLASSIC);
   state.starting = true;
   state.menu.view = "main";
   input.clear();
   syncUi();
   await audio.unlock();
-  game.start(seed);
+  game.start(seed, playMode);
   audio.setAltitude(0, "playing");
-  leaderboard.retryPending();
+  leaderboardFor(playMode).refresh();
+  leaderboardFor(playMode).retryPending();
   input.clear();
   state.starting = false;
   audio.play(retrying ? "retry" : "ui");
   liveStatus.textContent = retrying
-    ? `Phase ${PHASE} climb restarted by ${source}.`
-    : `Phase ${PHASE} climb started by ${source}.`;
+    ? `Phase ${PHASE} ${playMode} restarted by ${source}.`
+    : `Phase ${PHASE} ${playMode} started by ${source}.`;
+  render();
+  return true;
+};
+
+const startDevPlayMode = async (playMode) => {
+  if (!state.devTools.enabled) {
+    return false;
+  }
+  const started = await startGame(
+    playMode === PLAY_MODES.COW_VS_CAT
+      ? "dev-cow-vs-cat"
+      : "dev-classic",
+    undefined,
+    playMode,
+  );
+  if (!started) {
+    return false;
+  }
+  state.devTools.lastModeStart = playMode;
+  if (playMode === PLAY_MODES.COW_VS_CAT) {
+    liveStatus.textContent =
+      "Cow vs Cat Phase 14 started. The cat uses a bow swipe and a telegraphed vertical boost.";
+  }
+  setDevPanelOpen(false);
+  return true;
+};
+
+const moveDevRival = (direction) => {
+  const snapshot = game.getSnapshot();
+  if (
+    !state.devTools.enabled ||
+    snapshot.playMode !== PLAY_MODES.COW_VS_CAT ||
+    !snapshot.rival.present
+  ) {
+    return false;
+  }
+  const rival = game.debugSetRival({
+    x:
+      snapshot.rival.x +
+      Math.sign(Number(direction) || 0) *
+        RIVAL_FOUNDATION.debugStepX,
+  });
+  if (!rival) {
+    return false;
+  }
+  liveStatus.textContent = `Cat moved to ${Math.round(rival.x)}.`;
+  audio.play("ui");
+  render();
+  return true;
+};
+
+const toggleDevRivalMovement = () => {
+  const snapshot = game.getSnapshot();
+  if (
+    !state.devTools.enabled ||
+    snapshot.playMode !== PLAY_MODES.COW_VS_CAT ||
+    !snapshot.rival.present
+  ) {
+    return false;
+  }
+  const rival =
+    snapshot.rival.state === "grace"
+      ? game.debugSetRival({ skipGrace: true })
+      : game.debugSetRival({ frozen: !snapshot.rival.frozen });
+  if (!rival) {
+    return false;
+  }
+  liveStatus.textContent = rival.frozen
+    ? "Cat chase frozen for testing."
+    : "Cat chase active.";
+  audio.play("ui");
+  render();
+  return true;
+};
+
+const cycleDevRivalSpeed = () => {
+  const snapshot = game.getSnapshot();
+  if (
+    !state.devTools.enabled ||
+    snapshot.playMode !== PLAY_MODES.COW_VS_CAT ||
+    !snapshot.rival.present
+  ) {
+    return false;
+  }
+  const presets = RIVAL_CHASE.speedPresets;
+  const currentIndex = presets.findIndex(
+    (speed) => Math.abs(speed - snapshot.rival.chaseSpeedScale) < 0.01,
+  );
+  const nextSpeed = presets[(currentIndex + 1) % presets.length];
+  const rival = game.debugSetRival({ chaseSpeedScale: nextSpeed });
+  if (!rival) {
+    return false;
+  }
+  liveStatus.textContent = `Cat chase speed set to ${nextSpeed.toFixed(2)} times.`;
+  audio.play("ui");
+  render();
+  return true;
+};
+
+const forceDevRivalAttack = () => {
+  const snapshot = game.getSnapshot();
+  if (
+    !state.devTools.enabled ||
+    snapshot.playMode !== PLAY_MODES.COW_VS_CAT ||
+    !snapshot.rival.present
+  ) {
+    return false;
+  }
+  const rival = game.debugForceRivalAttack();
+  if (!rival) {
+    return false;
+  }
+  liveStatus.textContent =
+    "Cat bow swipe forced: watch the bow-tip glint, then dodge.";
+  audio.play("ui");
+  setDevPanelOpen(false);
+  return true;
+};
+
+const forceDevRivalBoost = () => {
+  const snapshot = game.getSnapshot();
+  if (
+    !state.devTools.enabled ||
+    snapshot.playMode !== PLAY_MODES.COW_VS_CAT ||
+    !snapshot.rival.present
+  ) {
+    return false;
+  }
+  const rival = game.debugForceRivalOvertake();
+  if (!rival) {
+    return false;
+  }
+  liveStatus.textContent =
+    "Cat overtake staged: it starts below, boosts past the cow, then briefly holds its height so you can climb above it.";
+  audio.play("ui");
+  setDevPanelOpen(false);
+  return true;
+};
+
+const forceDevRivalDive = () => {
+  const snapshot = game.getSnapshot();
+  if (
+    !state.devTools.enabled ||
+    snapshot.playMode !== PLAY_MODES.COW_VS_CAT ||
+    !snapshot.rival.present
+  ) {
+    return false;
+  }
+  const rival = game.debugForceRivalFiddleDrop();
+  if (!rival) {
+    return false;
+  }
+  liveStatus.textContent =
+    "Fiddle Drop forced: the faint diagonal guide locks before the dive.";
+  audio.play("ui");
+  setDevPanelOpen(false);
+  return true;
+};
+
+const forceDevRivalCounter = () => {
+  const snapshot = game.getSnapshot();
+  if (
+    !state.devTools.enabled ||
+    snapshot.playMode !== PLAY_MODES.COW_VS_CAT ||
+    !snapshot.rival.present
+  ) {
+    return false;
+  }
+  const rival = game.debugForceRivalCounter();
+  if (!rival) {
+    return false;
+  }
+  liveStatus.textContent =
+    "Counter bounce staged: the cow gets a smaller upward rebound without changing its combo.";
+  audio.play("ui");
+  setDevPanelOpen(false);
   render();
   return true;
 };
@@ -770,14 +1183,15 @@ const warpToSelectedLandmark = async () => {
   state.starting = true;
   syncUi();
   await audio.unlock();
-  game.start();
+  const playMode = normalizeLeaderboardMode(game.getSnapshot().playMode);
+  game.start(undefined, playMode);
   input.clear();
   const warp = game.debugWarpBelowLandmark(
     marker.id,
     state.devTools.warpDepthBalloons,
   );
   audio.setAltitude(game.currentHeight, "playing");
-  leaderboard.retryPending();
+  leaderboardFor(playMode).retryPending();
   state.devTools.lastWarp = {
     landmarkId: warp.marker.id,
     landmarkName: warp.marker.name,
@@ -807,11 +1221,12 @@ const warpToTopLeaderboardBalloon = async () => {
   state.starting = true;
   syncUi();
   await audio.unlock();
-  game.start();
+  const playMode = normalizeLeaderboardMode(game.getSnapshot().playMode);
+  game.start(undefined, playMode);
   input.clear();
   const warp = game.debugWarpBelowLeaderboardBalloon(1, 3);
   audio.setAltitude(game.currentHeight, "playing");
-  leaderboard.retryPending();
+  leaderboardFor(playMode).retryPending();
   state.devTools.lastWarp = {
     leaderboardRank: warp.leaderboardBalloon.leaderboard.rank,
     initials: warp.leaderboardBalloon.leaderboard.initials,
@@ -1008,14 +1423,19 @@ runtime = new FixedStepRuntime({
   },
 });
 
-startButton.addEventListener("click", () => startGame("button"));
+startButton.addEventListener("click", () =>
+  startGame("button", undefined, PLAY_MODES.CLASSIC),
+);
+cowVsCatButton.addEventListener("click", () =>
+  startGame("cow-vs-cat-button", undefined, PLAY_MODES.COW_VS_CAT),
+);
 howToPlayButton.addEventListener("click", async () => {
   await audio.unlock();
   setMenuView("how-to-play");
 });
 menuLeaderboardButton.addEventListener("click", async () => {
   await audio.unlock();
-  setMenuView("leaderboard");
+  setMenuView("leaderboard", PLAY_MODES.CLASSIC);
 });
 howToPlayClose.addEventListener("click", () => setMenuView("main"));
 howToPlayBack.addEventListener("click", () => setMenuView("main"));
@@ -1025,12 +1445,24 @@ howToPlayOverlay.addEventListener("click", (event) => {
   }
 });
 deathPrimary.addEventListener("click", () => {
-  game.openLeaderboard();
-  leaderboard.refresh({ force: true });
-  liveStatus.textContent = "Showing the shared leaderboard.";
-  render();
+  state.menu.leaderboardMode = normalizeLeaderboardMode(
+    game.getSnapshot().playMode,
+  );
+  if (game.openLeaderboard()) {
+    leaderboardFor(state.menu.leaderboardMode).refresh({ force: true });
+    liveStatus.textContent =
+      `Showing the ${state.menu.leaderboardMode} leaderboard.`;
+    render();
+  }
 });
 deathRetry.addEventListener("click", () => startGame("results-button"));
+deathMenu.addEventListener("click", returnToMainMenu);
+leaderboardTabClassic.addEventListener("click", () =>
+  selectLeaderboardMode(PLAY_MODES.CLASSIC),
+);
+leaderboardTabRival.addEventListener("click", () =>
+  selectLeaderboardMode(PLAY_MODES.COW_VS_CAT),
+);
 leaderboardBack.addEventListener("click", () => {
   if (game.mode === "menu") {
     setMenuView("main");
@@ -1043,6 +1475,7 @@ leaderboardBack.addEventListener("click", () => {
 leaderboardRetry.addEventListener("click", () =>
   startGame("leaderboard-button"),
 );
+leaderboardMenu.addEventListener("click", returnToMainMenu);
 leaderboardInitials.addEventListener("input", () => {
   const alphanumeric = String(leaderboardInitials.value || "")
     .replace(/[^a-z0-9]/gi, "")
@@ -1126,6 +1559,20 @@ devNext.addEventListener("click", () =>
 devSpeedToggle.addEventListener("click", () =>
   setDevSpeedLock(!game.getSnapshot().speed.devLockedAtOne),
 );
+devStartClassic.addEventListener("click", () =>
+  startDevPlayMode(PLAY_MODES.CLASSIC),
+);
+devStartRival.addEventListener("click", () =>
+  startDevPlayMode(PLAY_MODES.COW_VS_CAT),
+);
+devRivalLeft.addEventListener("click", () => moveDevRival(-1));
+devRivalRight.addEventListener("click", () => moveDevRival(1));
+devRivalToggle.addEventListener("click", toggleDevRivalMovement);
+devRivalSpeed.addEventListener("click", cycleDevRivalSpeed);
+devRivalAttack.addEventListener("click", forceDevRivalAttack);
+devRivalBoost.addEventListener("click", forceDevRivalBoost);
+devRivalDive.addEventListener("click", forceDevRivalDive);
+devRivalCounter.addEventListener("click", forceDevRivalCounter);
 devTestBird.addEventListener("click", () =>
   previewDevAmbientFlyby("bird"),
 );
@@ -1252,6 +1699,7 @@ window.render_game_to_text = () =>
     },
     menu: {
       view: state.menu.view,
+      leaderboardMode: state.menu.leaderboardMode,
       mainVisible: game.mode === "menu" && state.menu.view === "main",
       howToPlayVisible:
         game.mode === "menu" && state.menu.view === "how-to-play",
@@ -1278,6 +1726,10 @@ const developerTestApi = Object.freeze({
   getState: () => JSON.parse(window.render_game_to_text()),
   startGame,
   startWithSeed: (seed) => startGame("test-seed", seed),
+  startPlayMode: (playMode, seed) =>
+    startGame("test-play-mode", seed, playMode),
+  startCowVsCat: (seed) =>
+    startGame("test-cow-vs-cat", seed, PLAY_MODES.COW_VS_CAT),
   restartRun: (seed) => {
     game.start(seed);
     input.clear();
@@ -1292,6 +1744,11 @@ const developerTestApi = Object.freeze({
   debugSetPlayer: (values) => {
     game.debugSetPlayer(values);
     render();
+  },
+  debugSetRival: (values) => {
+    const rival = game.debugSetRival(values);
+    render();
+    return rival;
   },
   debugResetBalloon: (values) => {
     game.debugResetBalloon(values);
@@ -1327,6 +1784,39 @@ const developerTestApi = Object.freeze({
   closeDevTools: () => setDevPanelOpen(false),
   setSpeedRampLocked: (locked) => setDevSpeedLock(locked),
   previewAmbientFlyby: (type) => previewDevAmbientFlyby(type),
+  moveRival: (direction) => moveDevRival(direction),
+  toggleRivalMovement: () => toggleDevRivalMovement(),
+  cycleRivalSpeed: () => cycleDevRivalSpeed(),
+  forceRivalAttack: (direction) => {
+    const rival = game.debugForceRivalAttack(direction);
+    render();
+    return rival;
+  },
+  forceRivalBoost: () => {
+    const rival = game.debugForceRivalBoost();
+    render();
+    return rival;
+  },
+  forceRivalOvertake: () => {
+    const rival = game.debugForceRivalOvertake();
+    render();
+    return rival;
+  },
+  forceRivalFiddleDrop: () => {
+    const rival = game.debugForceRivalFiddleDrop();
+    render();
+    return rival;
+  },
+  forceRivalCounter: () => {
+    const rival = game.debugForceRivalCounter();
+    render();
+    return rival;
+  },
+  setRivalSpeed: (speed) => {
+    const rival = game.debugSetRival({ chaseSpeedScale: speed });
+    render();
+    return rival;
+  },
   selectDevLandmark: (reference) => {
     const normalized = String(reference || "").toLowerCase();
     const index =
@@ -1359,6 +1849,9 @@ const developerTestApi = Object.freeze({
     render();
   },
   openLeaderboard: () => {
+    state.menu.leaderboardMode = normalizeLeaderboardMode(
+      game.getSnapshot().playMode,
+    );
     const changed = game.openLeaderboard();
     render();
     return changed;
@@ -1455,6 +1948,8 @@ const developerTestApi = Object.freeze({
   toggleFullscreen,
   setAppModeOverlay,
   setMenuView,
+  selectLeaderboardMode,
+  returnToMainMenu,
 });
 const publicTestApi = Object.freeze({
   phase: PHASE,
@@ -1491,7 +1986,7 @@ loader
     } else {
       state.mode = "menu";
       liveStatus.textContent = `Phase ${PHASE} cosmic route ready.`;
-      leaderboard.refresh();
+      leaderboardFor(PLAY_MODES.CLASSIC).refresh();
     }
     runtime.resetPerformanceMetrics();
     render();

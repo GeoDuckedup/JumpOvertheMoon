@@ -8,3 +8,10 @@ env/
 cat-sword-climb/build/
 cat-sword-climb/highscore_cache.json
 release/
+output/
+
+# Local ImageGen working files; production rival frames are tracked separately.
+cat-sword-climb/assets/rival_cat_concept.png
+cat-sword-climb/assets/rival_cat_jetpack_anchor_v1.png
+cat-sword-climb/assets/rival_jetpack_component.png
+cat-sword-climb/assets/rival_jetpack_component_chroma.png

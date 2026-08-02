@@ -1,7 +1,7 @@
 import {
   DESKTOP_MAX_WIDTH,
   LOGICAL_WIDTH,
-} from "./config.js?v=10.3.1";
+} from "./config.js?v=16.0.2";
 
 const toNumber = (value) => {
   const parsed = Number.parseFloat(value);
@@ -132,11 +132,7 @@ export class LayoutController {
       fallbackWidth: window.innerWidth,
       fallbackHeight: window.innerHeight,
     });
-    const desktopFramed =
-      !fullscreen &&
-      this.#isFinePointer() &&
-      viewportWidth >= 700 &&
-      viewportWidth / viewportHeight >= 4 / 3;
+    const desktopFramed = !fullscreen && this.#isFinePointer();
     const orientationBlocked =
       coarsePointer && orientationLandscape && !editableFocused;
 

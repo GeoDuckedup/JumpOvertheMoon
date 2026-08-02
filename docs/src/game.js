@@ -9,19 +9,37 @@ import {
   GOALS,
   GOAL_MARKERS,
   LEADERBOARD_BALLOONS,
+  PLAY_MODES,
   PLAYER,
   REENTRY,
   REFERENCE_HEIGHT,
+  RIVAL_CHASE,
+  RIVAL_BOW_SWIPE,
+  RIVAL_FIDDLE_DROP,
+  RIVAL_FOUNDATION,
+  RIVAL_JETPACK,
+  RIVAL_ROUTE,
+  RIVAL_VERTICAL_BOOST,
   ROUTE,
   SHOOTING_STARS,
   SPEED_RAMP,
   UPPER_COSMOS_CHAPTERS,
   WORLD_FLOOR_Y,
-} from "./game-config.js?v=10.3.1";
-import { NameEntry } from "./name-entry.js?v=10.3.1";
-import { BalloonRoute, SeededRandom } from "./route.js?v=10.3.1";
+} from "./game-config.js?v=16.0.2";
+import { NameEntry } from "./name-entry.js?v=16.0.2";
+import { BalloonRoute, SeededRandom } from "./route.js?v=16.0.2";
 
 const BEST_HEIGHT_STORAGE_KEY = "over-the-moon.best-height";
+
+const normalizePlayMode = (value) =>
+  value === PLAY_MODES.COW_VS_CAT
+    ? PLAY_MODES.COW_VS_CAT
+    : PLAY_MODES.CLASSIC;
+
+const scoreStorageKeyForMode = (playMode) =>
+  playMode === PLAY_MODES.COW_VS_CAT
+    ? RIVAL_FOUNDATION.scoreStorageKey
+    : BEST_HEIGHT_STORAGE_KEY;
 
 const clamp = (value, minimum, maximum) =>
   Math.max(minimum, Math.min(maximum, value));
@@ -33,10 +51,69 @@ const round = (value, digits = 3) => {
 
 const lerp = (a, b, alpha) => a + (b - a) * alpha;
 
-const readSavedBest = () => {
+const smoothstep = (minimum, maximum, value) => {
+  const span = Math.max(0.0001, maximum - minimum);
+  const alpha = clamp((value - minimum) / span, 0, 1);
+  return alpha * alpha * (3 - 2 * alpha);
+};
+
+const WRAP_SPAN = GAME_WIDTH + PLAYER.wrapPadding * 2;
+const shortestWrappedDelta = (from, to) => {
+  let delta = to - from;
+  if (delta > WRAP_SPAN * 0.5) {
+    delta -= WRAP_SPAN;
+  } else if (delta < -WRAP_SPAN * 0.5) {
+    delta += WRAP_SPAN;
+  }
+  return delta;
+};
+
+const directDelta = (from, to) => to - from;
+
+const rivalCanBeForceActivated = (rival) =>
+  rival.state === "waiting-first-pop" ||
+  rival.state === "grace" ||
+  rival.state === "recovering";
+
+const rivalVisualFrameFor = (rival) => {
+  if (rival.state === "knocked-down") {
+    return "knockdown";
+  }
+  if (rival.attackState === "boost-telegraph") {
+    return "boost-charge";
+  }
+  if (rival.attackState === "boost-active") {
+    return "boost-active";
+  }
+  if (rival.attackState === "fiddle-telegraph") {
+    return "fiddle-drop-windup";
+  }
+  if (rival.attackState === "fiddle-active") {
+    return "fiddle-drop-active";
+  }
+  if (
+    rival.attackState === "fiddle-recovery" &&
+    rival.attackTimer > RIVAL_FIDDLE_DROP.recoverySeconds * 0.5
+  ) {
+    return "fiddle-heavy";
+  }
+  if (rival.attackState === "telegraph") {
+    return "bow-windup";
+  }
+  if (
+    rival.attackState === "active" ||
+    (rival.attackState === "recovery" &&
+      rival.attackTimer > RIVAL_BOW_SWIPE.recoverySeconds * 0.5)
+  ) {
+    return "bow-slash";
+  }
+  return "hover";
+};
+
+const readSavedBest = (storageKey = BEST_HEIGHT_STORAGE_KEY) => {
   try {
     const value = Number.parseInt(
-      globalThis.localStorage?.getItem(BEST_HEIGHT_STORAGE_KEY),
+      globalThis.localStorage?.getItem(storageKey),
       10,
     );
     return Number.isFinite(value) && value > 0 ? value : 0;
@@ -45,10 +122,13 @@ const readSavedBest = () => {
   }
 };
 
-const writeSavedBest = (height) => {
+const writeSavedBest = (
+  height,
+  storageKey = BEST_HEIGHT_STORAGE_KEY,
+) => {
   try {
     globalThis.localStorage?.setItem(
-      BEST_HEIGHT_STORAGE_KEY,
+      storageKey,
       String(Math.max(0, Math.floor(height))),
     );
   } catch {
@@ -86,6 +166,117 @@ const makePlayer = () => ({
   cooldown: 0,
   onGround: true,
 });
+
+const makeRivalFoundation = (playMode) => {
+  const present = playMode === PLAY_MODES.COW_VS_CAT;
+  const floorY = WORLD_FLOOR_Y - RIVAL_CHASE.physicsHeight * 0.5;
+  return {
+    implemented: true,
+    present,
+    visible: false,
+    active: false,
+    state: present ? "waiting-first-pop" : "absent",
+    x: RIVAL_FOUNDATION.startX,
+    y: floorY,
+    previousX: RIVAL_FOUNDATION.startX,
+    previousY: floorY,
+    vx: 0,
+    vy: 0,
+    facing: -1,
+    onGround: true,
+    frozen: false,
+    movementModel: "jetpack",
+    jetpackActive: false,
+    chaseSpeedScale: 1,
+    graceRemaining: 0,
+    entryRemaining: 0,
+    pauseRemaining: 0,
+    waitingForCow: false,
+    nextBreatherSeconds: 0,
+    recoveryRemaining: 0,
+    recoveryX: RIVAL_FOUNDATION.startX,
+    decisionRemaining: 0,
+    targetBalloonId: null,
+    lastBounceBalloonId: null,
+    lastBounceCooldown: 0,
+    orbitSide: -1,
+    hoverTargetX: RIVAL_FOUNDATION.startX,
+    hoverTargetY: floorY,
+    attackState: "idle",
+    attackKind: "none",
+    lastAttackKind: "none",
+    attackTimer: 0,
+    attackCooldown: present ? RIVAL_BOW_SWIPE.initialDelaySeconds : 0,
+    attackDirection: -1,
+    attackLockedY: floorY,
+    attackHitCow: false,
+    attackBalloonPops: 0,
+    boostLockedX: RIVAL_FOUNDATION.startX,
+    boostHitCow: false,
+    boostClanked: false,
+    boostBalloonPops: 0,
+    fiddleDirectionX: 0,
+    fiddleDirectionY: 1,
+    fiddleTargetX: RIVAL_FOUNDATION.startX,
+    fiddleTargetY: floorY,
+    fiddleHitCow: false,
+    fiddleBalloonPops: 0,
+    exhaustEmitRemaining: 0,
+    exhaustTrail: [],
+    rubberBandActive: false,
+    rubberBandPending: false,
+    rubberBandStrength: 0,
+    rubberBandScreenY: floorY,
+    rubberBandVerticalLag: 0,
+    rubberBandOffscreenSeconds: 0,
+    rubberBandMaximumOffscreenSeconds: 0,
+    postOvertakeHoldRemaining: 0,
+    postOvertakeHoldY: floorY,
+    overtakeQueued: false,
+    boostOvertookCow: false,
+    engagedSeconds: 0,
+    abovePressureSeconds: 0,
+    knockdownRemaining: 0,
+    retreatPending: false,
+    movementEnabled: present,
+    collisionEnabled: false,
+    combatEnabled: present,
+    stats: {
+      entries: 0,
+      jumps: 0,
+      balloonBounces: 0,
+      balloonPops: 0,
+      sideBalloonPops: 0,
+      mainBalloonPops: 0,
+      breathers: 0,
+      recoveries: 0,
+      edgeTurns: 0,
+      bowSwipes: 0,
+      verticalBoosts: 0,
+      overtakes: 0,
+      fiddleDrops: 0,
+      cowHits: 0,
+      boostCowHits: 0,
+      boostClanks: 0,
+      boostBalloonPops: 0,
+      fiddleCowHits: 0,
+      fiddleBalloonPops: 0,
+      attackSelections: 0,
+      rubberBandActivations: 0,
+      rubberBandFailsafes: 0,
+      counterHitsTaken: 0,
+      counterBouncesAwarded: 0,
+      retreats: 0,
+    },
+    attacksImplemented: Object.freeze({
+      bowSwipe: present,
+      verticalBoost: present,
+      fiddleDrop: present,
+      fiddleSmash: present,
+      catsConcerto: false,
+    }),
+  };
+};
 
 const makeDebugBalloon = (values = {}) => ({
   id: "debug-balloon",
@@ -166,9 +357,10 @@ const hydrateBalloon = (record) => ({
   poppedTimer: 0,
 });
 
-const leaderboardBalloonIdentity = (entry, duplicateIndex) =>
+const leaderboardBalloonIdentity = (playMode, entry, duplicateIndex) =>
   [
     "leaderboard-balloon",
+    playMode,
     entry.initials,
     entry.score,
     entry.timestamp,
@@ -265,9 +457,9 @@ const backgroundProgressAtHeight = (height) => {
 };
 
 export class PhaseSixGame {
-  constructor({ onEvent, leaderboard } = {}) {
+  constructor({ onEvent, leaderboard, leaderboards } = {}) {
     this.onEvent = onEvent;
-    this.leaderboard = leaderboard || {
+    const emptyLeaderboard = {
       implemented: false,
       status: "idle",
       localBest: 0,
@@ -278,9 +470,22 @@ export class PhaseSixGame {
       error: null,
     };
     this.mode = "menu";
+    this.playMode = PLAY_MODES.CLASSIC;
+    this.leaderboards = {
+      [PLAY_MODES.CLASSIC]: {
+        ...emptyLeaderboard,
+        ...(leaderboards?.[PLAY_MODES.CLASSIC] || leaderboard || {}),
+      },
+      [PLAY_MODES.COW_VS_CAT]: {
+        ...emptyLeaderboard,
+        ...(leaderboards?.[PLAY_MODES.COW_VS_CAT] || {}),
+      },
+    };
+    this.leaderboard = this.leaderboards[this.playMode];
     this.viewportHeight = REFERENCE_HEIGHT;
     this.viewportFloorMargin = CAMERA.tallViewportFloorMargin;
     this.player = makePlayer();
+    this.rival = makeRivalFoundation(this.playMode);
     this.balloons = [];
     this.leaderboardBalloons = [];
     this.balloonHistoryChunks = new Map();
@@ -289,17 +494,33 @@ export class PhaseSixGame {
     this.poppedLeaderboardBalloonIds = new Set();
     this.rehydratedBalloonCount = 0;
     this.activeRouteChunkCount = 0;
+    this.rivalRouteBackupCount = 0;
     this.debugBalloonOverride = false;
     this.goalMarkers = makeGoalMarkers();
     this.route = new BalloonRoute(1);
     this.visualRandom = new SeededRandom(1);
     this.ambientRandom = new SeededRandom(2);
+    this.rivalRandom = new SeededRandom(3);
     this.runSeed = 1;
     this.cameraY = 0;
     this.previousCameraY = 0;
     this.hitPauseTimer = 0;
     this.bestHeight = 0;
-    this.savedBestHeight = readSavedBest();
+    this.savedBestByMode = {
+      [PLAY_MODES.CLASSIC]: Math.max(
+        readSavedBest(BEST_HEIGHT_STORAGE_KEY),
+        Math.floor(
+          Number(this.leaderboards[PLAY_MODES.CLASSIC].localBest) || 0,
+        ),
+      ),
+      [PLAY_MODES.COW_VS_CAT]: Math.max(
+        readSavedBest(RIVAL_FOUNDATION.scoreStorageKey),
+        Math.floor(
+          Number(this.leaderboards[PLAY_MODES.COW_VS_CAT].localBest) || 0,
+        ),
+      ),
+    };
+    this.savedBestHeight = this.savedBestByMode[this.playMode];
     this.newBest = false;
     this.finalScore = 0;
     this.hasPoppedBalloon = false;
@@ -335,10 +556,14 @@ export class PhaseSixGame {
     this.setViewportHeight(REFERENCE_HEIGHT);
   }
 
-  start(seed = createRunSeed()) {
+  start(seed = createRunSeed(), playMode = this.playMode) {
     this.runId += 1;
+    this.playMode = normalizePlayMode(playMode);
+    this.leaderboard = this.leaderboards[this.playMode];
     this.runSeed = Number(seed) >>> 0 || 1;
     this.player = makePlayer();
+    this.rival = makeRivalFoundation(this.playMode);
+    this.savedBestHeight = this.savedBestByMode[this.playMode] || 0;
     this.balloons = [];
     this.leaderboardBalloons = [];
     this.balloonHistoryChunks = new Map();
@@ -347,6 +572,7 @@ export class PhaseSixGame {
     this.poppedLeaderboardBalloonIds = new Set();
     this.rehydratedBalloonCount = 0;
     this.activeRouteChunkCount = 0;
+    this.rivalRouteBackupCount = 0;
     this.debugBalloonOverride = false;
     this.goalMarkers = makeGoalMarkers();
     this.route.reset(this.runSeed);
@@ -356,6 +582,10 @@ export class PhaseSixGame {
     this.ambientRandom = new SeededRandom(
       (this.runSeed ^ 0x85ebca6b) >>> 0 || 1,
     );
+    this.rivalRandom = new SeededRandom(
+      (this.runSeed ^ 0xc2b2ae35) >>> 0 || 1,
+    );
+    this.rival.nextBreatherSeconds = this.#nextRivalBreatherDelay();
     this.hitPauseTimer = 0;
     this.bestHeight = 0;
     this.newBest = false;
@@ -429,6 +659,8 @@ export class PhaseSixGame {
     const player = this.player;
     player.previousX = player.x;
     player.previousY = player.y;
+    this.rival.previousX = this.rival.x;
+    this.rival.previousY = this.rival.y;
     this.previousCameraY = this.cameraY;
 
     if (input.consumeAction()) {
@@ -443,6 +675,7 @@ export class PhaseSixGame {
     const wasOnGround = player.onGround;
     this.#updateSpeedMultiplier();
     this.#updatePlayer(dt, input.direction);
+    this.#updateRival(dt);
     this.#updateReentryState();
     for (const balloon of this.balloons) {
       balloon.wobble += dt * 4 * this.speedMultiplier;
@@ -451,18 +684,22 @@ export class PhaseSixGame {
       balloon.wobble += dt * 4 * this.speedMultiplier;
     }
 
-    const hitBalloon = [
-      ...this.balloons,
-      ...this.leaderboardBalloons,
-    ].find((balloon) => balloon.alive && this.#swordHitsBalloon(balloon));
-    if (hitBalloon) {
-      this.#popBalloon(hitBalloon);
+    if (this.#swordHitsRival()) {
+      this.#knockDownRival();
     } else {
-      const hitMarker = this.goalMarkers.find(
-        (marker) => marker.alive && this.#swordHitsGoalMarker(marker),
-      );
-      if (hitMarker) {
-        this.#clearGoalMarker(hitMarker);
+      const hitBalloon = [
+        ...this.balloons,
+        ...this.leaderboardBalloons,
+      ].find((balloon) => balloon.alive && this.#swordHitsBalloon(balloon));
+      if (hitBalloon) {
+        this.#popBalloon(hitBalloon);
+      } else {
+        const hitMarker = this.goalMarkers.find(
+          (marker) => marker.alive && this.#swordHitsGoalMarker(marker),
+        );
+        if (hitMarker) {
+          this.#clearGoalMarker(hitMarker);
+        }
       }
     }
 
@@ -521,6 +758,7 @@ export class PhaseSixGame {
     );
     return {
       mode: this.mode,
+      playMode: this.playMode,
       runId: this.runId,
       runSeed: this.runSeed,
       player: {
@@ -546,6 +784,153 @@ export class PhaseSixGame {
               y: round(y),
             }))
           : null,
+      },
+      rival: {
+        implemented: this.rival.implemented,
+        present: this.rival.present,
+        visible: this.rival.visible,
+        active: this.rival.active,
+        state: this.rival.state,
+        waitingForFirstCowPop:
+          this.rival.state === "waiting-first-pop",
+        x: round(this.rival.x),
+        y: round(this.rival.y),
+        vx: round(this.rival.vx),
+        vy: round(this.rival.vy),
+        width: RIVAL_CHASE.physicsWidth,
+        height: RIVAL_CHASE.physicsHeight,
+        facing: this.rival.facing,
+        onGround: this.rival.onGround,
+        frozen: this.rival.frozen,
+        movementModel: this.rival.movementModel,
+        jetpackActive: this.rival.jetpackActive,
+        visualFrame: rivalVisualFrameFor(this.rival),
+        chaseSpeedScale: round(this.rival.chaseSpeedScale, 2),
+        graceRemainingSeconds: round(this.rival.graceRemaining, 3),
+        entryRemainingSeconds: round(this.rival.entryRemaining, 3),
+        breatherRemainingSeconds: round(this.rival.pauseRemaining, 3),
+        waitingForCow: this.rival.waitingForCow,
+        nextBreatherSeconds: round(this.rival.nextBreatherSeconds, 3),
+        recoveryRemainingSeconds: round(this.rival.recoveryRemaining, 3),
+        recoveryX: round(this.rival.recoveryX),
+        orbitSide: this.rival.orbitSide,
+        hoverTarget: {
+          x: round(this.rival.hoverTargetX),
+          y: round(this.rival.hoverTargetY),
+        },
+        rubberBand: {
+          active: this.rival.rubberBandActive,
+          pending: this.rival.rubberBandPending,
+          strength: round(this.rival.rubberBandStrength, 3),
+          verticalScale: round(
+            lerp(
+              1,
+              RIVAL_JETPACK.rubberBandMaximumVerticalScale,
+              this.rival.rubberBandStrength,
+            ),
+            3,
+          ),
+          screenY: round(this.rival.rubberBandScreenY),
+          verticalLag: round(this.rival.rubberBandVerticalLag),
+          offscreenSeconds: round(
+            this.rival.rubberBandOffscreenSeconds,
+            3,
+          ),
+          maximumOffscreenSeconds: round(
+            this.rival.rubberBandMaximumOffscreenSeconds,
+            3,
+          ),
+        },
+        verticalPressure: {
+          relation:
+            this.player.y - this.rival.y >=
+            RIVAL_JETPACK.abovePressureMinimumLead
+              ? "above"
+              : this.rival.y - this.player.y >=
+                  RIVAL_JETPACK.overtakeTriggerBelowDistance
+                ? "below"
+                : "level",
+          leadAboveCow: round(this.player.y - this.rival.y),
+          targetMinimumLead: RIVAL_JETPACK.abovePressureMinimumLead,
+          overtakeQueued:
+            this.rival.overtakeQueued,
+          postOvertakeHoldRemainingSeconds: round(
+            this.rival.postOvertakeHoldRemaining,
+            3,
+          ),
+          postOvertakeHoldY: round(this.rival.postOvertakeHoldY),
+          engagedSeconds: round(this.rival.engagedSeconds, 3),
+          abovePressureSeconds: round(
+            this.rival.abovePressureSeconds,
+            3,
+          ),
+          abovePressureRatio: round(
+            this.rival.engagedSeconds > 0
+              ? this.rival.abovePressureSeconds /
+                  this.rival.engagedSeconds
+              : 0,
+            3,
+          ),
+        },
+        attack: {
+          kind: this.rival.attackKind,
+          state: this.rival.attackState,
+          timerSeconds: round(this.rival.attackTimer, 3),
+          cooldownSeconds: round(this.rival.attackCooldown, 3),
+          direction: this.rival.attackDirection,
+          bowLaneY: round(this.rival.attackLockedY),
+          hitCow: this.rival.attackHitCow,
+          balloonsPopped: this.rival.attackBalloonPops,
+          telegraphSeconds: RIVAL_BOW_SWIPE.telegraphSeconds,
+          activeSeconds: RIVAL_BOW_SWIPE.activeSeconds,
+          recoverySeconds: RIVAL_BOW_SWIPE.recoverySeconds,
+          boostTelegraphSeconds: RIVAL_VERTICAL_BOOST.telegraphSeconds,
+          boostActiveSeconds: RIVAL_VERTICAL_BOOST.activeSeconds,
+          boostRecoverySeconds: RIVAL_VERTICAL_BOOST.recoverySeconds,
+          boostHitHalfWidth: RIVAL_VERTICAL_BOOST.hitHalfWidth,
+          boostHitReachAbove: RIVAL_VERTICAL_BOOST.hitReachAbove,
+          boostKnockbackHorizontal:
+            RIVAL_VERTICAL_BOOST.cowKnockbackHorizontal,
+          boostKnockbackDown: RIVAL_VERTICAL_BOOST.cowKnockbackDown,
+          boostKnockbackDownAdd:
+            RIVAL_VERTICAL_BOOST.cowKnockbackDownAdd,
+          boostHitCow: this.rival.boostHitCow,
+          boostClanked: this.rival.boostClanked,
+          boostBalloonsPopped: this.rival.boostBalloonPops,
+          fiddleTelegraphSeconds: RIVAL_FIDDLE_DROP.telegraphSeconds,
+          fiddleActiveSeconds: RIVAL_FIDDLE_DROP.activeSeconds,
+          fiddleRecoverySeconds: RIVAL_FIDDLE_DROP.recoverySeconds,
+          fiddleDirection: {
+            x: round(this.rival.fiddleDirectionX, 4),
+            y: round(this.rival.fiddleDirectionY, 4),
+          },
+          fiddleTarget: {
+            x: round(this.rival.fiddleTargetX),
+            y: round(this.rival.fiddleTargetY),
+          },
+          fiddleHitCow: this.rival.fiddleHitCow,
+          fiddleBalloonsPopped: this.rival.fiddleBalloonPops,
+        },
+        exhaustTrail: this.rival.exhaustTrail.map((point) => ({
+          x: round(point.x),
+          y: round(point.y),
+          ageSeconds: round(point.age, 3),
+          facing: point.facing,
+          visualFrame: point.visualFrame,
+          intensity: round(point.intensity, 2),
+        })),
+        knockdownRemainingSeconds: round(
+          this.rival.knockdownRemaining,
+          3,
+        ),
+        retreatPending: this.rival.retreatPending,
+        targetBalloonId: this.rival.targetBalloonId,
+        lastBounceBalloonId: this.rival.lastBounceBalloonId,
+        stats: { ...this.rival.stats },
+        movementEnabled: this.rival.movementEnabled,
+        collisionEnabled: this.rival.collisionEnabled,
+        combatEnabled: this.rival.combatEnabled,
+        attacksImplemented: { ...this.rival.attacksImplemented },
       },
       balloons: balloonSnapshots,
       balloon: balloonSnapshots[0] || null,
@@ -646,12 +1031,31 @@ export class PhaseSixGame {
         qualifiesForLeaderboard: this.qualifiesForLeaderboard,
         submitted: this.nameEntrySubmitted,
       },
+      scoreIsolation: {
+        namespace: this.playMode,
+        storageKey: scoreStorageKeyForMode(this.playMode),
+        localBestEnabled: true,
+        remoteLeaderboardEnabled: true,
+        remoteScoresPath: this.leaderboard.scoresPath || null,
+        modeSeparated: true,
+      },
       leaderboard: {
         ...this.leaderboard,
         topScores: (this.leaderboard.topScores || []).map((entry) => ({
           ...entry,
         })),
       },
+      leaderboards: Object.fromEntries(
+        Object.entries(this.leaderboards).map(([playMode, snapshot]) => [
+          playMode,
+          {
+            ...snapshot,
+            topScores: (snapshot.topScores || []).map((entry) => ({
+              ...entry,
+            })),
+          },
+        ]),
+      ),
       route: {
         ...this.route.getSnapshot(),
         colors: [...ROUTE.colors],
@@ -664,6 +1068,9 @@ export class PhaseSixGame {
         activeHistoryChunkCount: this.activeRouteChunkCount,
         rehydratedBalloonCount: this.rehydratedBalloonCount,
         poppedHistoryBalloonCount: this.poppedBalloonIds.size,
+        combatRedundancyEnabled:
+          this.playMode === PLAY_MODES.COW_VS_CAT,
+        combatBackupBalloonCount: this.rivalRouteBackupCount,
         nearbyActiveOnly: true,
       },
       camera: {
@@ -726,6 +1133,128 @@ export class PhaseSixGame {
         goldAura: true,
         comboBehavior: "displayed-color",
         exactRecordedHeights: true,
+        modeSpecific: true,
+        rivalProtected: true,
+      },
+      phaseEleven: {
+        cowVsCatFoundationImplemented: true,
+        publicMenuVisible: true,
+        devEntryOnly: false,
+        rivalConceptAsset: "rival-cat-jetpack-hover",
+        rivalMovementImplemented: true,
+        rivalCombatImplemented: true,
+        classicScoreIsolationImplemented: true,
+      },
+      phaseSixteen: {
+        publicCowVsCatImplemented: true,
+        sharedCoreGameImplemented: true,
+        modeSpecificLeaderboardsImplemented: true,
+        modeSpecificOfflineQueuesImplemented: true,
+        modeSpecificScoreBalloonsImplemented: true,
+        mainMenuFromResultsImplemented: true,
+        rivalArrivalAfterFirstCowPopImplemented: true,
+      },
+      phaseTwelve: {
+        pursuitMovementImplemented: true,
+        openingGraceImplemented: true,
+        balloonTraversalImplemented: false,
+        balloonTraversalConsumesBalloons: false,
+        catPopsAffectCowScoreOrCombo: false,
+        protectedCowRouteImplemented: false,
+        breatherRhythmImplemented: true,
+        softEngagementBandImplemented: true,
+        offscreenRecoveryImplemented: true,
+        recoveryUsesVisibleScreenBoundary: true,
+        rivalHorizontalWrapEnabled: false,
+        artificialRivalShadow: false,
+        devFreezeAndSpeedControlsImplemented: true,
+        cowCollisionImplemented: false,
+        rivalCombatImplemented: true,
+        supersededByJetpackPursuit: true,
+      },
+      phaseThirteen: {
+        jetpackPursuitImplemented: true,
+        balloonTraversalRequired: false,
+        bowSwipeImplemented: true,
+        telegraphActiveRecoveryWindows: true,
+        swipePopsBalloons: true,
+        touchDoesNotPopBalloons: true,
+        cowDownwardKnockbackImplemented: true,
+        counterFromAboveImplemented: true,
+        threeCounterRetreatImplemented: true,
+        combatRouteRedundancyImplemented: true,
+        landmarkApproachProtectionImplemented: true,
+        catPopsAffectCowScoreOrCombo: false,
+        generatedActionSpriteSetImplemented: true,
+        animatedJetFlamesImplemented: true,
+        installedVisualFrames: [
+          "hover",
+          "bow-windup",
+          "bow-slash",
+          "fiddle-heavy",
+          "concerto",
+          "knockdown",
+        ],
+        fiddleSmashImplemented: false,
+        catsConcertoImplemented: false,
+      },
+      phaseFourteen: {
+        perFrameNozzleAnchorsImplemented: true,
+        persistentHeatHazeTrailImplemented: true,
+        counterBounceImplemented: true,
+        counterBouncePreservesCombo: true,
+        counterBounceNormalBalloonRatio:
+          RIVAL_JETPACK.counterBounceSpeed / PLAYER.bounceSpeed,
+        verticalBoostImplemented: true,
+        verticalBoostLocksTrajectory: true,
+        verticalBoostClankImplemented: true,
+        verticalBoostClankNormalBalloonRatio:
+          RIVAL_VERTICAL_BOOST.clankBounceSpeed / PLAYER.bounceSpeed,
+        verticalBoostClankPreservesCombo: true,
+        verticalBoostPopsMaximum:
+          RIVAL_VERTICAL_BOOST.maximumBalloonPopsPerBoost,
+        protectedLandmarkAndLeaderboardBalloons: true,
+        boostVisualFrames: ["boost-charge", "boost-active"],
+      },
+      phaseFifteen: {
+        widerMovingOrbitImplemented: true,
+        minimumNeutralSideDistance:
+          RIVAL_JETPACK.hoverSideDistance -
+          RIVAL_JETPACK.hoverSideWanderAmplitude,
+        maximumNeutralSideDistance:
+          RIVAL_JETPACK.hoverSideDistance +
+          RIVAL_JETPACK.hoverSideWanderAmplitude,
+        weightedAttackDirectorImplemented: true,
+        repeatAttackPreventionImplemented: true,
+        attackWeights: {
+          bowSwipe: RIVAL_BOW_SWIPE.selectionWeight,
+          verticalBoost: RIVAL_VERTICAL_BOOST.selectionWeight,
+          fiddleDrop: RIVAL_FIDDLE_DROP.selectionWeight,
+        },
+        fiddleDropImplemented: true,
+        fiddleDropLocksTrajectory: true,
+        fiddleDropPopsMaximum:
+          RIVAL_FIDDLE_DROP.maximumBalloonPopsPerDrop,
+        protectedLandmarkAndLeaderboardBalloons: true,
+        fiddleDropVisualFrames: [
+          "fiddle-drop-windup",
+          "fiddle-drop-active",
+        ],
+        cameraRelativeRubberBandImplemented: true,
+        rubberBandBeginsWhileVisible: true,
+        rubberBandBottomStartRatio:
+          RIVAL_JETPACK.rubberBandBottomStartRatio,
+        rubberBandMaximumVerticalScale:
+          RIVAL_JETPACK.rubberBandMaximumVerticalScale,
+        attackSelectionSuppressedDuringCatchUp: true,
+        committedAttackTrajectoriesPreserved: true,
+        rubberBandFailsafeSeconds:
+          RIVAL_JETPACK.rubberBandFailsafeSeconds,
+        aboveRoutePressureImplemented: true,
+        neutralLeadAboveCow: Math.abs(RIVAL_JETPACK.hoverVerticalOffset),
+        overtakeBoostPriorityImplemented: true,
+        postOvertakeVulnerabilitySeconds:
+          RIVAL_JETPACK.postOvertakeHoldSeconds,
       },
     };
   }
@@ -733,6 +1262,7 @@ export class PhaseSixGame {
   getRenderState(interpolation) {
     const alpha = clamp(Number(interpolation) || 0, 0, 1);
     const player = this.player;
+    const rival = this.rival;
     const snapshot = this.getSnapshot();
     const wrapped =
       Math.abs(player.x - player.previousX) > GAME_WIDTH * 0.5;
@@ -742,6 +1272,11 @@ export class PhaseSixGame {
         ...snapshot.player,
         renderX: wrapped ? player.x : lerp(player.previousX, player.x, alpha),
         renderY: lerp(player.previousY, player.y, alpha),
+      },
+      rival: {
+        ...snapshot.rival,
+        renderX: lerp(rival.previousX, rival.x, alpha),
+        renderY: lerp(rival.previousY, rival.y, alpha),
       },
       camera: {
         ...snapshot.camera,
@@ -770,6 +1305,242 @@ export class PhaseSixGame {
     this.#updateSpeedMultiplier();
     this.#updateCamera();
     this.#maintainRoute();
+  }
+
+  debugSetRival(values = {}) {
+    if (this.playMode !== PLAY_MODES.COW_VS_CAT) {
+      return null;
+    }
+    if (
+      values.skipGrace === true &&
+      rivalCanBeForceActivated(this.rival)
+    ) {
+      this.#activateRival(this.rival.state === "recovering");
+    }
+    if (values.forceRecovery === true && this.rival.active) {
+      this.#beginRivalRecovery();
+    }
+    if (Number.isFinite(Number(values.chaseSpeedScale))) {
+      this.rival.chaseSpeedScale = clamp(
+        Number(values.chaseSpeedScale),
+        RIVAL_CHASE.speedMinimum,
+        RIVAL_CHASE.speedMaximum,
+      );
+    }
+    if (Number.isFinite(Number(values.breatherInSeconds))) {
+      this.rival.nextBreatherSeconds = Math.max(
+        0,
+        Number(values.breatherInSeconds),
+      );
+    }
+    if (Number.isFinite(Number(values.pauseRemaining))) {
+      this.rival.pauseRemaining = Math.max(
+        0,
+        Number(values.pauseRemaining),
+      );
+    }
+    if (Number.isFinite(Number(values.attackCooldown))) {
+      this.rival.attackCooldown = Math.max(
+        0,
+        Number(values.attackCooldown),
+      );
+    }
+    if (values.orbitSide === -1 || values.orbitSide === 1) {
+      this.rival.orbitSide = values.orbitSide;
+    }
+    if (typeof values.frozen === "boolean") {
+      if (values.frozen && rivalCanBeForceActivated(this.rival)) {
+        this.#activateRival(false);
+      }
+      this.rival.frozen = values.frozen;
+      if (values.frozen) {
+        this.rival.state = "frozen";
+        this.rival.visible = true;
+        this.rival.active = true;
+        this.rival.vx = 0;
+        this.rival.vy = 0;
+        this.rival.jetpackActive = false;
+      } else if (this.rival.active) {
+        this.rival.state =
+          this.rival.entryRemaining > 0 ? "reentering" : "chasing";
+        this.rival.nextBreatherSeconds = this.#nextRivalBreatherDelay();
+        this.rival.jetpackActive = true;
+      }
+    }
+    if (Number.isFinite(Number(values.x))) {
+      this.rival.x = clamp(
+        Number(values.x),
+        RIVAL_CHASE.edgeInsetX,
+        GAME_WIDTH - RIVAL_CHASE.edgeInsetX,
+      );
+    }
+    if (Number.isFinite(Number(values.y))) {
+      this.rival.y = Number(values.y);
+    }
+    if (Number.isFinite(Number(values.vx))) {
+      this.rival.vx = Number(values.vx);
+    }
+    if (Number.isFinite(Number(values.vy))) {
+      this.rival.vy = Number(values.vy);
+    }
+    if (typeof values.onGround === "boolean") {
+      this.rival.onGround = values.onGround;
+    }
+    if (typeof values.visible === "boolean") {
+      this.rival.visible = values.visible;
+    }
+    if (values.facing === -1 || values.facing === 1) {
+      this.rival.facing = values.facing;
+    }
+    this.rival.previousX = this.rival.x;
+    this.rival.previousY = this.rival.y;
+    return { ...this.getSnapshot().rival };
+  }
+
+  debugForceRivalAttack(direction) {
+    if (this.playMode !== PLAY_MODES.COW_VS_CAT) {
+      return null;
+    }
+    if (rivalCanBeForceActivated(this.rival)) {
+      this.#activateRival(this.rival.state === "recovering");
+    }
+    this.rival.frozen = false;
+    this.rival.entryRemaining = 0;
+    this.rival.attackState = "idle";
+    this.rival.attackKind = "none";
+    this.rival.attackCooldown = 0;
+    this.#startRivalBowSwipe(direction);
+    return { ...this.getSnapshot().rival };
+  }
+
+  debugForceRivalBoost() {
+    if (this.playMode !== PLAY_MODES.COW_VS_CAT) {
+      return null;
+    }
+    if (rivalCanBeForceActivated(this.rival)) {
+      this.#activateRival(this.rival.state === "recovering");
+    }
+    const hoverFloorY = WORLD_FLOOR_Y - RIVAL_JETPACK.groundClearance;
+    this.rival.frozen = false;
+    this.rival.visible = true;
+    this.rival.active = true;
+    this.rival.entryRemaining = 0;
+    this.rival.x = clamp(
+      this.player.x,
+      RIVAL_CHASE.edgeInsetX,
+      GAME_WIDTH - RIVAL_CHASE.edgeInsetX,
+    );
+    this.rival.y = Math.min(
+      this.player.y + RIVAL_VERTICAL_BOOST.setupBelowDistance,
+      hoverFloorY,
+    );
+    this.rival.previousX = this.rival.x;
+    this.rival.previousY = this.rival.y;
+    this.rival.vx = 0;
+    this.rival.vy = 0;
+    this.rival.attackState = "idle";
+    this.rival.attackKind = "none";
+    this.rival.attackCooldown = 0;
+    this.#beginRivalBoostTelegraph();
+    return { ...this.getSnapshot().rival };
+  }
+
+  debugForceRivalOvertake() {
+    if (this.playMode !== PLAY_MODES.COW_VS_CAT) {
+      return null;
+    }
+    if (rivalCanBeForceActivated(this.rival)) {
+      this.#activateRival(this.rival.state === "recovering");
+    }
+    const reviewY = this.cameraY + this.viewportHeight * 0.46;
+    this.player.x = GAME_WIDTH * 0.5;
+    this.player.y = reviewY;
+    this.player.previousX = this.player.x;
+    this.player.previousY = this.player.y;
+    this.player.vx = 0;
+    this.player.vy = -COMBO.comboBounceSpeed;
+    this.player.onGround = false;
+    this.#updateSpeedMultiplier();
+    this.#updateCamera();
+    this.#maintainRoute();
+    this.rival.frozen = false;
+    this.rival.visible = true;
+    this.rival.active = true;
+    this.rival.entryRemaining = 0;
+    this.rival.x = clamp(
+      this.player.x + 54,
+      RIVAL_CHASE.edgeInsetX,
+      GAME_WIDTH - RIVAL_CHASE.edgeInsetX,
+    );
+    this.rival.y =
+      this.player.y + RIVAL_JETPACK.overtakeTriggerBelowDistance + 90;
+    this.rival.previousX = this.rival.x;
+    this.rival.previousY = this.rival.y;
+    this.rival.vx = 0;
+    this.rival.vy = 0;
+    this.rival.attackState = "idle";
+    this.rival.attackKind = "none";
+    this.rival.attackCooldown = 0;
+    this.rival.postOvertakeHoldRemaining = 0;
+    this.rival.overtakeQueued = false;
+    this.rival.boostOvertookCow = false;
+    this.#startRivalVerticalBoost();
+    return { ...this.getSnapshot().rival };
+  }
+
+  debugForceRivalFiddleDrop() {
+    if (this.playMode !== PLAY_MODES.COW_VS_CAT) {
+      return null;
+    }
+    if (rivalCanBeForceActivated(this.rival)) {
+      this.#activateRival(this.rival.state === "recovering");
+    }
+    this.rival.frozen = false;
+    this.rival.visible = true;
+    this.rival.active = true;
+    this.rival.entryRemaining = 0;
+    this.rival.x = clamp(
+      this.player.x - RIVAL_FIDDLE_DROP.setupSideDistance,
+      RIVAL_CHASE.edgeInsetX,
+      GAME_WIDTH - RIVAL_CHASE.edgeInsetX,
+    );
+    this.rival.y = this.player.y - RIVAL_FIDDLE_DROP.setupAboveDistance;
+    this.rival.previousX = this.rival.x;
+    this.rival.previousY = this.rival.y;
+    this.rival.vx = 0;
+    this.rival.vy = 0;
+    this.rival.attackState = "idle";
+    this.rival.attackKind = "none";
+    this.rival.attackCooldown = 0;
+    this.#beginRivalFiddleTelegraph();
+    return { ...this.getSnapshot().rival };
+  }
+
+  debugForceRivalCounter() {
+    if (this.playMode !== PLAY_MODES.COW_VS_CAT) {
+      return null;
+    }
+    if (rivalCanBeForceActivated(this.rival)) {
+      this.#activateRival(this.rival.state === "recovering");
+    }
+    const visibleY = this.cameraY + this.viewportHeight * 0.48;
+    this.player.x = GAME_WIDTH * 0.5;
+    this.player.y = visibleY;
+    this.player.previousX = this.player.x;
+    this.player.previousY = this.player.y;
+    this.rival.x = this.player.x;
+    this.rival.y = this.player.y + 62;
+    this.rival.previousX = this.rival.x;
+    this.rival.previousY = this.rival.y;
+    this.rival.visible = true;
+    this.rival.active = true;
+    this.rival.frozen = false;
+    this.rival.entryRemaining = 0;
+    this.rival.attackState = "boost-recovery";
+    this.rival.attackKind = "vertical-boost";
+    this.rival.attackTimer = RIVAL_VERTICAL_BOOST.recoverySeconds;
+    this.#knockDownRival();
+    return { ...this.getSnapshot().rival };
   }
 
   debugResetBalloon(values = {}) {
@@ -1021,8 +1792,12 @@ export class PhaseSixGame {
 
   debugSetSavedBest(scoreMeters, persist = false) {
     this.savedBestHeight = Math.max(0, Math.floor(Number(scoreMeters) || 0));
+    this.savedBestByMode[this.playMode] = this.savedBestHeight;
     if (persist) {
-      writeSavedBest(this.savedBestHeight);
+      writeSavedBest(
+        this.savedBestHeight,
+        scoreStorageKeyForMode(this.playMode),
+      );
     }
   }
 
@@ -1047,19 +1822,34 @@ export class PhaseSixGame {
     this.ambientFlyby = null;
   }
 
-  setLeaderboard(snapshot = {}) {
-    this.leaderboard = {
-      ...this.leaderboard,
+  setLeaderboard(playModeOrSnapshot = {}, nextSnapshot = null) {
+    const snapshot =
+      typeof playModeOrSnapshot === "string"
+        ? nextSnapshot || {}
+        : playModeOrSnapshot || {};
+    const targetMode = normalizePlayMode(
+      typeof playModeOrSnapshot === "string"
+        ? playModeOrSnapshot
+        : snapshot.playMode || PLAY_MODES.CLASSIC,
+    );
+    const previous = this.leaderboards[targetMode];
+    this.leaderboards[targetMode] = {
+      ...previous,
       ...snapshot,
-      topScores: (snapshot.topScores || this.leaderboard.topScores || []).map(
+      playMode: targetMode,
+      topScores: (snapshot.topScores || previous.topScores || []).map(
         (entry) => ({ ...entry }),
       ),
     };
-    this.savedBestHeight = Math.max(
-      this.savedBestHeight,
-      Math.floor(Number(this.leaderboard.localBest) || 0),
+    this.savedBestByMode[targetMode] = Math.max(
+      this.savedBestByMode[targetMode],
+      Math.floor(Number(this.leaderboards[targetMode].localBest) || 0),
     );
-    this.#syncLeaderboardBalloons();
+    if (this.playMode === targetMode) {
+      this.leaderboard = this.leaderboards[targetMode];
+      this.savedBestHeight = this.savedBestByMode[targetMode];
+      this.#syncLeaderboardBalloons();
+    }
   }
 
   isNameEntryActive() {
@@ -1084,6 +1874,24 @@ export class PhaseSixGame {
       return false;
     }
     this.deathView = "summary";
+    this.#emit("ui");
+    return true;
+  }
+
+  returnToMenu() {
+    if (this.mode === "menu") {
+      return false;
+    }
+    this.mode = "menu";
+    this.deathView = "summary";
+    this.nameEntry = null;
+    this.nameEntrySubmitted = false;
+    this.qualifiesForLeaderboard = false;
+    this.player.onGround = true;
+    this.player.vx = 0;
+    this.player.vy = 0;
+    this.cameraY = this.#baseCameraY();
+    this.previousCameraY = this.cameraY;
     this.#emit("ui");
     return true;
   }
@@ -1182,6 +1990,7 @@ export class PhaseSixGame {
   }
 
   #popBalloon(balloon) {
+    const isFirstCowBalloonPop = this.totalPopped === 0;
     balloon.alive = false;
     balloon.poppedTimer = 0.001;
     const isLeaderboardBalloon = balloon.routeRole === "leaderboard";
@@ -1192,6 +2001,13 @@ export class PhaseSixGame {
     }
     this.hasPoppedBalloon = true;
     this.totalPopped += 1;
+    if (
+      isFirstCowBalloonPop &&
+      this.playMode === PLAY_MODES.COW_VS_CAT &&
+      this.rival.state === "waiting-first-pop"
+    ) {
+      this.#beginRivalOpeningGrace();
+    }
 
     let bounceSpeed = PLAYER.bounceSpeed;
     let reward = null;
@@ -1307,6 +2123,1710 @@ export class PhaseSixGame {
 
     player.slashTimer = Math.max(0, player.slashTimer - dt);
     player.cooldown = Math.max(0, player.cooldown - dt);
+  }
+
+  #updateRival(dt) {
+    const rival = this.rival;
+    if (
+      this.playMode !== PLAY_MODES.COW_VS_CAT ||
+      !rival.present ||
+      !rival.movementEnabled
+    ) {
+      return;
+    }
+
+    if (rival.state === "waiting-first-pop") {
+      rival.visible = false;
+      rival.active = false;
+      rival.jetpackActive = false;
+      rival.vx = 0;
+      rival.vy = 0;
+      return;
+    }
+
+    this.#updateRivalExhaustTrail(dt);
+
+    if (rival.frozen) {
+      rival.state = "frozen";
+      rival.active = true;
+      rival.visible = true;
+      rival.vx = 0;
+      rival.vy = 0;
+      rival.jetpackActive = false;
+      return;
+    }
+
+    if (rival.state === "grace") {
+      rival.graceRemaining = Math.max(0, rival.graceRemaining - dt);
+      if (rival.graceRemaining <= 0) {
+        this.#activateRival(false);
+      }
+      return;
+    }
+
+    if (rival.state === "recovering") {
+      rival.recoveryRemaining = Math.max(
+        0,
+        rival.recoveryRemaining - dt,
+      );
+      if (rival.recoveryRemaining <= 0) {
+        this.#activateRival(true);
+      }
+      return;
+    }
+
+    if (!rival.active || !rival.visible) {
+      return;
+    }
+
+    rival.postOvertakeHoldRemaining = Math.max(
+      0,
+      rival.postOvertakeHoldRemaining - dt,
+    );
+    rival.engagedSeconds += dt;
+    if (
+      this.player.y - rival.y >=
+      RIVAL_JETPACK.abovePressureMinimumLead
+    ) {
+      rival.abovePressureSeconds += dt;
+    }
+
+    if (rival.state === "knocked-down") {
+      this.#updateRivalKnockdown(dt);
+      return;
+    }
+
+    if (this.#updateRivalRubberBand(dt)) {
+      return;
+    }
+
+    rival.entryRemaining = Math.max(0, rival.entryRemaining - dt);
+    rival.attackCooldown = Math.max(0, rival.attackCooldown - dt);
+
+    if (rival.attackState === "boost-positioning") {
+      this.#updateRivalBoostPositioning(dt);
+      return;
+    }
+
+    if (rival.attackState === "boost-telegraph") {
+      this.#updateRivalBoostTelegraph(dt);
+      return;
+    }
+
+    if (rival.attackState === "boost-active") {
+      this.#updateRivalBoostActive(dt);
+      return;
+    }
+
+    if (rival.attackState === "boost-recovery") {
+      this.#updateRivalBoostRecovery(dt);
+      return;
+    }
+
+    if (rival.attackState === "fiddle-positioning") {
+      this.#updateRivalFiddlePositioning(dt);
+      return;
+    }
+
+    if (rival.attackState === "fiddle-telegraph") {
+      this.#updateRivalFiddleTelegraph(dt);
+      return;
+    }
+
+    if (rival.attackState === "fiddle-active") {
+      this.#updateRivalFiddleActive(dt);
+      return;
+    }
+
+    if (rival.attackState === "fiddle-recovery") {
+      this.#updateRivalFiddleRecovery(dt);
+      return;
+    }
+
+    if (rival.attackState === "active") {
+      rival.state = "swiping";
+      rival.jetpackActive = true;
+      rival.attackTimer = Math.max(0, rival.attackTimer - dt);
+      rival.facing = rival.attackDirection;
+      rival.vx =
+        rival.attackDirection *
+        RIVAL_BOW_SWIPE.dashSpeed *
+        rival.chaseSpeedScale;
+      rival.vy *= 0.78;
+      rival.x += rival.vx * dt;
+      rival.y += rival.vy * dt;
+      this.#constrainRivalHorizontally();
+      this.#applyRivalSwipeHits();
+      if (rival.attackTimer <= 0) {
+        rival.attackState = "recovery";
+        rival.attackTimer = RIVAL_BOW_SWIPE.recoverySeconds;
+        rival.state = "swipe-recovery";
+        rival.vx *= 0.35;
+        rival.orbitSide = rival.attackDirection;
+      }
+      return;
+    }
+
+    if (rival.attackState === "telegraph") {
+      rival.state = "swipe-telegraph";
+      rival.attackTimer = Math.max(0, rival.attackTimer - dt);
+      this.#updateRivalJetpack(dt, 0.28);
+      // The warning glint promises a horizontal lane. Above-route neutral
+      // pressure must not pull the cat into a different lane before the dash.
+      rival.y = rival.attackLockedY;
+      rival.vy = 0;
+      rival.facing = rival.attackDirection;
+      if (rival.attackTimer <= 0) {
+        rival.attackState = "active";
+        rival.attackTimer = RIVAL_BOW_SWIPE.activeSeconds;
+        rival.state = "swiping";
+        this.#emit("rivalSwipe");
+      }
+      return;
+    }
+
+    if (rival.attackState === "recovery") {
+      rival.state = "swipe-recovery";
+      rival.attackTimer = Math.max(0, rival.attackTimer - dt);
+      this.#updateRivalJetpack(dt, 0.42);
+      if (rival.attackTimer <= 0) {
+        rival.attackState = "idle";
+        rival.attackKind = "none";
+        rival.state = "chasing";
+        rival.attackCooldown = this.rivalRandom.uniform(
+          RIVAL_BOW_SWIPE.cooldownMinimumSeconds,
+          RIVAL_BOW_SWIPE.cooldownMaximumSeconds,
+        );
+      }
+      return;
+    }
+
+    rival.state = rival.entryRemaining > 0 ? "reentering" : "chasing";
+    this.#updateRivalJetpack(dt, 1);
+
+    const needsOvertake =
+      rival.postOvertakeHoldRemaining <= 0 &&
+      rival.y - this.player.y >=
+        RIVAL_JETPACK.overtakeTriggerBelowDistance &&
+      this.player.y <=
+        WORLD_FLOOR_Y -
+          PLAYER.height * 0.5 -
+          RIVAL_VERTICAL_BOOST.minimumPlayerFloorClearance;
+    if (needsOvertake) {
+      rival.overtakeQueued = true;
+      rival.attackCooldown = Math.min(
+        rival.attackCooldown,
+        RIVAL_JETPACK.overtakeCooldownCapSeconds,
+      );
+    } else if (
+      this.player.y >
+      WORLD_FLOOR_Y -
+        PLAYER.height * 0.5 -
+        RIVAL_VERTICAL_BOOST.minimumPlayerFloorClearance
+    ) {
+      rival.overtakeQueued = false;
+    }
+
+    if (
+      rival.entryRemaining <= 0 &&
+      rival.attackCooldown <= 0 &&
+      rival.postOvertakeHoldRemaining <= 0 &&
+      !rival.rubberBandActive &&
+      !rival.rubberBandPending
+    ) {
+      this.#selectRivalAttack();
+    }
+  }
+
+  #selectRivalAttack() {
+    const rival = this.rival;
+    if (rival.rubberBandActive || rival.rubberBandPending) {
+      return false;
+    }
+    const boostEligible =
+      this.player.y <=
+      WORLD_FLOOR_Y -
+        PLAYER.height * 0.5 -
+        RIVAL_VERTICAL_BOOST.minimumPlayerFloorClearance;
+    const needsOvertake =
+      boostEligible &&
+      rival.postOvertakeHoldRemaining <= 0 &&
+      (rival.overtakeQueued ||
+        rival.y - this.player.y >=
+          RIVAL_JETPACK.overtakeTriggerBelowDistance);
+    const fiddleEligible =
+      this.player.y - this.cameraY >=
+      RIVAL_FIDDLE_DROP.setupAboveDistance + 48;
+    const available = needsOvertake
+      ? [
+          {
+            kind: "vertical-boost",
+            weight: RIVAL_VERTICAL_BOOST.selectionWeight,
+          },
+        ]
+      : [
+          {
+            kind: "bow-swipe",
+            weight: RIVAL_BOW_SWIPE.selectionWeight,
+          },
+          ...(boostEligible &&
+          rival.y - this.player.y >
+            -RIVAL_JETPACK.abovePressureMinimumLead
+            ? [
+                {
+                  kind: "vertical-boost",
+                  weight: RIVAL_VERTICAL_BOOST.selectionWeight,
+                },
+              ]
+            : []),
+          ...(fiddleEligible
+            ? [
+                {
+                  kind: "fiddle-drop",
+                  weight: RIVAL_FIDDLE_DROP.selectionWeight,
+                },
+              ]
+            : []),
+        ];
+    const withoutRepeat = available.filter(
+      (candidate) => candidate.kind !== rival.lastAttackKind,
+    );
+    const candidates = withoutRepeat.length ? withoutRepeat : available;
+    const totalWeight = candidates.reduce(
+      (sum, candidate) => sum + candidate.weight,
+      0,
+    );
+    let roll = this.rivalRandom.unit() * totalWeight;
+    let selected = candidates[candidates.length - 1];
+    for (const candidate of candidates) {
+      roll -= candidate.weight;
+      if (roll <= 0) {
+        selected = candidate;
+        break;
+      }
+    }
+    const started =
+      selected.kind === "vertical-boost"
+        ? this.#startRivalVerticalBoost()
+        : selected.kind === "fiddle-drop"
+          ? this.#startRivalFiddleDrop()
+          : this.#startRivalBowSwipe();
+    if (started) {
+      rival.stats.attackSelections += 1;
+    } else {
+      rival.attackCooldown = 0.2;
+    }
+    return started;
+  }
+
+  #updateRivalJetpack(dt, thrustScale) {
+    const rival = this.rival;
+    const hoverFloorY = WORLD_FLOOR_Y - RIVAL_JETPACK.groundClearance;
+    const bob =
+      Math.sin(
+        this.runTimeSeconds *
+          RIVAL_JETPACK.hoverBobCyclesPerSecond *
+          Math.PI *
+          2,
+      ) * RIVAL_JETPACK.hoverBobAmplitude;
+    const wanderAngle =
+      this.runTimeSeconds *
+      RIVAL_JETPACK.hoverWanderCyclesPerSecond *
+      Math.PI *
+      2;
+    const sideDistance =
+      RIVAL_JETPACK.hoverSideDistance +
+      Math.sin(wanderAngle) * RIVAL_JETPACK.hoverSideWanderAmplitude;
+    const verticalOffset =
+      RIVAL_JETPACK.hoverVerticalOffset +
+      Math.sin(wanderAngle * 1.31 + rival.orbitSide * 1.4) *
+        RIVAL_JETPACK.hoverVerticalWanderAmplitude;
+    rival.hoverTargetX = clamp(
+      this.player.x + rival.orbitSide * sideDistance,
+      RIVAL_CHASE.edgeInsetX,
+      GAME_WIDTH - RIVAL_CHASE.edgeInsetX,
+    );
+    const movingVerticalTarget =
+      Math.min(this.player.y + verticalOffset, hoverFloorY) + bob;
+    const holdingAfterOvertake =
+      rival.postOvertakeHoldRemaining > 0 &&
+      !rival.rubberBandActive &&
+      !rival.rubberBandPending;
+    rival.hoverTargetY = holdingAfterOvertake
+      ? Math.min(rival.postOvertakeHoldY, hoverFloorY)
+      : movingVerticalTarget;
+
+    const verticalCatchUpScale = rival.rubberBandActive
+      ? lerp(
+          1,
+          RIVAL_JETPACK.rubberBandMaximumVerticalScale,
+          rival.rubberBandStrength,
+        )
+      : 1;
+    this.#steerRivalJetpackTo(
+      dt,
+      rival.hoverTargetX,
+      rival.hoverTargetY,
+      thrustScale,
+      verticalCatchUpScale,
+    );
+  }
+
+  #steerRivalJetpackTo(
+    dt,
+    targetX,
+    targetY,
+    thrustScale = 1,
+    verticalCatchUpScale = 1,
+  ) {
+    const rival = this.rival;
+    const speed = this.speedMultiplier * rival.chaseSpeedScale;
+    rival.hoverTargetX = targetX;
+    rival.hoverTargetY = targetY;
+
+    const deltaX = targetX - rival.x;
+    const deltaY = targetY - rival.y;
+    if (Math.abs(deltaX) > RIVAL_JETPACK.horizontalDeadZone) {
+      rival.vx +=
+        Math.sign(deltaX) *
+        RIVAL_JETPACK.horizontalAcceleration *
+        speed *
+        thrustScale *
+        dt;
+      rival.facing = Math.sign(deltaX) || rival.facing;
+    }
+    if (Math.abs(deltaY) > RIVAL_JETPACK.verticalDeadZone) {
+      rival.vy +=
+        Math.sign(deltaY) *
+        RIVAL_JETPACK.verticalAcceleration *
+        speed *
+        Math.max(thrustScale, verticalCatchUpScale) *
+        dt;
+    }
+    const damping = Math.pow(
+      RIVAL_JETPACK.velocityDampingPerStep,
+      dt * 60,
+    );
+    rival.vx *= damping;
+    rival.vy *= damping;
+    rival.vx = clamp(
+      rival.vx,
+      -RIVAL_JETPACK.maxHorizontalSpeed * speed,
+      RIVAL_JETPACK.maxHorizontalSpeed * speed,
+    );
+    rival.vy = clamp(
+      rival.vy,
+      -RIVAL_JETPACK.maxVerticalSpeed * speed * verticalCatchUpScale,
+      RIVAL_JETPACK.maxVerticalSpeed * speed * verticalCatchUpScale,
+    );
+    rival.x += rival.vx * dt;
+    rival.y += rival.vy * dt;
+    rival.jetpackActive = true;
+    rival.onGround = false;
+    rival.targetBalloonId = null;
+    this.#constrainRivalHorizontally();
+    return { deltaX, deltaY };
+  }
+
+  #rivalRubberBandEligible() {
+    return [
+      "idle",
+      "recovery",
+      "boost-recovery",
+      "fiddle-recovery",
+    ].includes(this.rival.attackState);
+  }
+
+  #updateRivalRubberBand(dt) {
+    const rival = this.rival;
+    const screenY = rival.y - this.cameraY;
+    const verticalLag = rival.y - this.player.y;
+    const cameraTrackingClimb = this.cameraY < this.#baseCameraY() - 0.5;
+    const belowViewport = screenY > this.viewportHeight;
+    const shouldMeasureCatchUp = cameraTrackingClimb || belowViewport;
+    const visibleBandStrength = shouldMeasureCatchUp
+      ? smoothstep(
+          this.viewportHeight * RIVAL_JETPACK.rubberBandBottomStartRatio,
+          this.viewportHeight * RIVAL_JETPACK.rubberBandBottomFullRatio,
+          screenY,
+        )
+      : 0;
+    const verticalLagStrength = shouldMeasureCatchUp
+      ? smoothstep(
+          RIVAL_JETPACK.rubberBandLagStartDistance,
+          RIVAL_JETPACK.rubberBandLagFullDistance,
+          verticalLag,
+        )
+      : 0;
+    const strength = Math.max(visibleBandStrength, verticalLagStrength);
+    const eligible = this.#rivalRubberBandEligible();
+    const wasActive = rival.rubberBandActive;
+
+    rival.rubberBandScreenY = screenY;
+    rival.rubberBandVerticalLag = verticalLag;
+    rival.rubberBandPending = strength > 0.001 && !eligible;
+    rival.rubberBandActive = strength > 0.001 && eligible;
+    rival.rubberBandStrength = rival.rubberBandActive ? strength : 0;
+
+    if (rival.rubberBandActive && !wasActive) {
+      rival.stats.rubberBandActivations += 1;
+    }
+
+    if (belowViewport) {
+      rival.rubberBandOffscreenSeconds += dt;
+      rival.rubberBandMaximumOffscreenSeconds = Math.max(
+        rival.rubberBandMaximumOffscreenSeconds,
+        rival.rubberBandOffscreenSeconds,
+      );
+    } else {
+      rival.rubberBandOffscreenSeconds = 0;
+    }
+
+    if (
+      eligible &&
+      rival.rubberBandOffscreenSeconds >=
+        RIVAL_JETPACK.rubberBandFailsafeSeconds
+    ) {
+      rival.stats.rubberBandFailsafes += 1;
+      this.#beginRivalRecovery();
+      return true;
+    }
+    return false;
+  }
+
+  #updateRivalExhaustTrail(dt) {
+    const rival = this.rival;
+    for (const point of rival.exhaustTrail) {
+      point.age += dt;
+    }
+    rival.exhaustTrail = rival.exhaustTrail.filter(
+      (point) => point.age < RIVAL_JETPACK.exhaustTrailLifetimeSeconds,
+    );
+    if (
+      !rival.visible ||
+      !rival.active ||
+      !rival.jetpackActive ||
+      rival.frozen
+    ) {
+      rival.exhaustEmitRemaining = 0;
+      return;
+    }
+
+    rival.exhaustEmitRemaining -= dt;
+    if (rival.exhaustEmitRemaining > 0) {
+      return;
+    }
+    const boosting = rival.attackState === "boost-active";
+    rival.exhaustEmitRemaining = boosting
+      ? RIVAL_JETPACK.exhaustTrailBoostIntervalSeconds
+      : RIVAL_JETPACK.exhaustTrailIntervalSeconds;
+    rival.exhaustTrail.push({
+      x: rival.x,
+      y: rival.y,
+      age: 0,
+      facing: rival.facing,
+      visualFrame: rivalVisualFrameFor(rival),
+      intensity: boosting
+        ? 2
+        : rival.attackState === "boost-telegraph"
+          ? 1.35
+          : 1,
+    });
+    if (
+      rival.exhaustTrail.length > RIVAL_JETPACK.exhaustTrailMaximumPoints
+    ) {
+      rival.exhaustTrail.splice(
+        0,
+        rival.exhaustTrail.length - RIVAL_JETPACK.exhaustTrailMaximumPoints,
+      );
+    }
+  }
+
+  #startRivalVerticalBoost() {
+    const rival = this.rival;
+    if (!rival.active || !rival.visible || rival.attackState !== "idle") {
+      return false;
+    }
+    rival.attackKind = "vertical-boost";
+    rival.lastAttackKind = "vertical-boost";
+    rival.overtakeQueued = false;
+    rival.attackState = "boost-positioning";
+    rival.attackTimer = RIVAL_VERTICAL_BOOST.positioningSeconds;
+    rival.attackHitCow = false;
+    rival.attackBalloonPops = 0;
+    rival.boostHitCow = false;
+    rival.boostClanked = false;
+    rival.boostBalloonPops = 0;
+    rival.boostOvertookCow = false;
+    rival.state = "boost-positioning";
+    rival.jetpackActive = true;
+    return true;
+  }
+
+  #updateRivalBoostPositioning(dt) {
+    const rival = this.rival;
+    rival.state = "boost-positioning";
+    rival.jetpackActive = true;
+    rival.attackTimer = Math.max(0, rival.attackTimer - dt);
+    const hoverFloorY = WORLD_FLOOR_Y - RIVAL_JETPACK.groundClearance;
+    const targetX = clamp(
+      this.player.x,
+      RIVAL_CHASE.edgeInsetX,
+      GAME_WIDTH - RIVAL_CHASE.edgeInsetX,
+    );
+    const targetY = Math.min(
+      this.player.y + RIVAL_VERTICAL_BOOST.setupBelowDistance,
+      hoverFloorY,
+    );
+    const { deltaX, deltaY } = this.#steerRivalJetpackTo(
+      dt,
+      targetX,
+      targetY,
+      1.15,
+    );
+    if (
+      (Math.abs(deltaX) <=
+        RIVAL_VERTICAL_BOOST.setupHorizontalTolerance &&
+        Math.abs(deltaY) <= RIVAL_VERTICAL_BOOST.setupVerticalTolerance) ||
+      rival.attackTimer <= 0
+    ) {
+      this.#beginRivalBoostTelegraph();
+    }
+  }
+
+  #beginRivalBoostTelegraph() {
+    const rival = this.rival;
+    rival.attackKind = "vertical-boost";
+    rival.lastAttackKind = "vertical-boost";
+    rival.attackState = "boost-telegraph";
+    rival.attackTimer = RIVAL_VERTICAL_BOOST.telegraphSeconds;
+    rival.boostLockedX = rival.x;
+    rival.boostHitCow = false;
+    rival.boostClanked = false;
+    rival.boostBalloonPops = 0;
+    rival.boostOvertookCow = false;
+    rival.state = "boost-telegraph";
+    rival.jetpackActive = true;
+    rival.vx *= 0.18;
+    rival.vy *= 0.18;
+    rival.stats.verticalBoosts += 1;
+    this.#emit("rivalBoostTelegraph");
+    return true;
+  }
+
+  #updateRivalBoostTelegraph(dt) {
+    const rival = this.rival;
+    rival.state = "boost-telegraph";
+    rival.jetpackActive = true;
+    rival.attackTimer = Math.max(0, rival.attackTimer - dt);
+    const damping = Math.pow(0.68, dt * 60);
+    rival.vx *= damping;
+    rival.vy *= damping;
+    rival.x += rival.vx * dt;
+    rival.y += rival.vy * dt;
+    rival.boostLockedX = rival.x;
+    rival.facing = Math.sign(this.player.x - rival.x) || rival.facing;
+    this.#constrainRivalHorizontally();
+    if (rival.attackTimer <= 0) {
+      rival.attackState = "boost-active";
+      rival.attackTimer = RIVAL_VERTICAL_BOOST.activeSeconds;
+      rival.state = "boost-active";
+      rival.vx = 0;
+      rival.vy =
+        -RIVAL_VERTICAL_BOOST.launchSpeed *
+        this.speedMultiplier *
+        rival.chaseSpeedScale;
+      this.#emit("rivalBoost");
+    }
+  }
+
+  #updateRivalBoostActive(dt) {
+    const rival = this.rival;
+    rival.state = "boost-active";
+    rival.jetpackActive = true;
+    rival.attackTimer = Math.max(0, rival.attackTimer - dt);
+    rival.x = rival.boostLockedX;
+    rival.vx = 0;
+    rival.vy =
+      -RIVAL_VERTICAL_BOOST.launchSpeed *
+      this.speedMultiplier *
+      rival.chaseSpeedScale;
+    rival.y += rival.vy * dt;
+    this.#applyRivalBoostHits();
+    if (rival.attackTimer <= 0) {
+      rival.boostOvertookCow =
+        this.player.y - rival.y >=
+        RIVAL_JETPACK.abovePressureMinimumLead;
+      rival.attackState = "boost-recovery";
+      rival.attackTimer = RIVAL_VERTICAL_BOOST.recoverySeconds;
+      rival.state = "boost-recovery";
+      rival.vy *= 0.24;
+      rival.orbitSide *= -1;
+    }
+  }
+
+  #updateRivalBoostRecovery(dt) {
+    const rival = this.rival;
+    rival.state = "boost-recovery";
+    rival.jetpackActive = true;
+    rival.attackTimer = Math.max(0, rival.attackTimer - dt);
+    this.#updateRivalJetpack(dt, 0.36);
+    if (rival.attackTimer <= 0) {
+      if (
+        rival.boostOvertookCow ||
+        this.player.y - rival.y >=
+          RIVAL_JETPACK.abovePressureMinimumLead
+      ) {
+        rival.stats.overtakes += 1;
+        rival.postOvertakeHoldRemaining =
+          RIVAL_JETPACK.postOvertakeHoldSeconds;
+        rival.postOvertakeHoldY = rival.y;
+      }
+      rival.attackState = "idle";
+      rival.attackKind = "none";
+      rival.state = "chasing";
+      rival.attackCooldown = this.rivalRandom.uniform(
+        RIVAL_VERTICAL_BOOST.cooldownMinimumSeconds,
+        RIVAL_VERTICAL_BOOST.cooldownMaximumSeconds,
+      );
+    }
+  }
+
+  #applyRivalBoostHits() {
+    const rival = this.rival;
+    if (
+      !rival.boostHitCow &&
+      !rival.boostClanked &&
+      this.#rivalBoostHitsPlayer()
+    ) {
+      if (this.#swordClanksRivalBoost()) {
+        rival.boostClanked = true;
+        rival.stats.boostClanks += 1;
+        this.#bounce(
+          RIVAL_VERTICAL_BOOST.clankBounceSpeed * this.speedMultiplier,
+        );
+        this.fallPeakHeight = this.currentHeight;
+        this.reentryStage = 0;
+        this.hitPauseTimer = Math.max(this.hitPauseTimer, 0.045);
+        this.#emit("rivalClank");
+      } else {
+        rival.boostHitCow = true;
+        rival.stats.cowHits += 1;
+        rival.stats.boostCowHits += 1;
+        const direction =
+          Math.sign(this.player.x - rival.x) || rival.facing || 1;
+        this.player.vx =
+          direction *
+          RIVAL_VERTICAL_BOOST.cowKnockbackHorizontal *
+          this.speedMultiplier;
+        const downwardSpeed = Math.max(0, this.player.vy);
+        this.player.vy = Math.max(
+          RIVAL_VERTICAL_BOOST.cowKnockbackDown * this.speedMultiplier,
+          downwardSpeed +
+            RIVAL_VERTICAL_BOOST.cowKnockbackDownAdd *
+              this.speedMultiplier,
+        );
+        this.player.onGround = false;
+        this.player.slashTimer = 0;
+        this.reentryStage = 0;
+        this.hitPauseTimer = Math.max(this.hitPauseTimer, 0.04);
+        this.#emit("rivalBoostHit");
+      }
+    }
+
+    let remaining =
+      RIVAL_VERTICAL_BOOST.maximumBalloonPopsPerBoost -
+      rival.boostBalloonPops;
+    if (remaining <= 0) {
+      return;
+    }
+    const hitBalloons = this.balloons.filter(
+      (balloon) =>
+        balloon.alive &&
+        this.#rivalMayPopBalloon(balloon) &&
+        this.#rivalCanInteractOnScreen(balloon) &&
+        this.#rivalBoostHitsCircle(balloon.x, balloon.y, balloon.radius),
+    );
+    for (const balloon of hitBalloons) {
+      if (remaining <= 0) {
+        break;
+      }
+      rival.boostBalloonPops += 1;
+      rival.stats.boostBalloonPops += 1;
+      remaining -= 1;
+      this.#popBalloonForRival(balloon);
+    }
+  }
+
+  #rivalBoostHitsPlayer() {
+    return this.#rivalBoostHitsCircle(
+      this.player.x,
+      this.player.y,
+      Math.max(PLAYER.width, PLAYER.height) * 0.42,
+    );
+  }
+
+  #swordClanksRivalBoost() {
+    if (!this.#isSlashing()) {
+      return false;
+    }
+    return this.#circleHitsSegment(
+      this.rival.boostLockedX,
+      this.rival.y + RIVAL_VERTICAL_BOOST.clankSwordOffsetY,
+      RIVAL_VERTICAL_BOOST.clankSwordRadius,
+      ...this.#swordSegment(),
+    );
+  }
+
+  #rivalBoostHitsCircle(x, y, radius) {
+    const rival = this.rival;
+    if (
+      Math.abs(x - rival.boostLockedX) >
+      RIVAL_VERTICAL_BOOST.hitHalfWidth + radius
+    ) {
+      return false;
+    }
+    const top =
+      Math.min(rival.previousY, rival.y) -
+      RIVAL_VERTICAL_BOOST.hitReachAbove;
+    const bottom =
+      Math.max(rival.previousY, rival.y) +
+      RIVAL_CHASE.physicsHeight * 0.5;
+    return y + radius >= top && y - radius <= bottom;
+  }
+
+  #startRivalFiddleDrop() {
+    const rival = this.rival;
+    if (!rival.active || !rival.visible || rival.attackState !== "idle") {
+      return false;
+    }
+    rival.attackKind = "fiddle-drop";
+    rival.lastAttackKind = "fiddle-drop";
+    rival.attackState = "fiddle-positioning";
+    rival.attackTimer = RIVAL_FIDDLE_DROP.positioningSeconds;
+    rival.fiddleHitCow = false;
+    rival.fiddleBalloonPops = 0;
+    rival.state = "fiddle-positioning";
+    rival.jetpackActive = true;
+    return true;
+  }
+
+  #updateRivalFiddlePositioning(dt) {
+    const rival = this.rival;
+    rival.state = "fiddle-positioning";
+    rival.jetpackActive = true;
+    rival.attackTimer = Math.max(0, rival.attackTimer - dt);
+    const targetX = clamp(
+      this.player.x + rival.orbitSide * RIVAL_FIDDLE_DROP.setupSideDistance,
+      RIVAL_CHASE.edgeInsetX,
+      GAME_WIDTH - RIVAL_CHASE.edgeInsetX,
+    );
+    const targetY = this.player.y - RIVAL_FIDDLE_DROP.setupAboveDistance;
+    const { deltaX, deltaY } = this.#steerRivalJetpackTo(
+      dt,
+      targetX,
+      targetY,
+      1.18,
+    );
+    if (
+      (Math.abs(deltaX) <= RIVAL_FIDDLE_DROP.setupHorizontalTolerance &&
+        Math.abs(deltaY) <= RIVAL_FIDDLE_DROP.setupVerticalTolerance) ||
+      rival.attackTimer <= 0
+    ) {
+      this.#beginRivalFiddleTelegraph();
+    }
+  }
+
+  #beginRivalFiddleTelegraph() {
+    const rival = this.rival;
+    rival.attackKind = "fiddle-drop";
+    rival.lastAttackKind = "fiddle-drop";
+    rival.attackState = "fiddle-telegraph";
+    rival.attackTimer = RIVAL_FIDDLE_DROP.telegraphSeconds;
+    rival.fiddleTargetX = clamp(
+      this.player.x +
+        this.player.vx * RIVAL_FIDDLE_DROP.targetLeadSeconds,
+      RIVAL_CHASE.edgeInsetX,
+      GAME_WIDTH - RIVAL_CHASE.edgeInsetX,
+    );
+    rival.fiddleTargetY =
+      this.player.y + RIVAL_FIDDLE_DROP.targetPastPlayerDistance;
+    const deltaX = rival.fiddleTargetX - rival.x;
+    const deltaY = Math.max(1, rival.fiddleTargetY - rival.y);
+    const length = Math.max(1, Math.hypot(deltaX, deltaY));
+    rival.fiddleDirectionX = deltaX / length;
+    rival.fiddleDirectionY = deltaY / length;
+    rival.fiddleHitCow = false;
+    rival.fiddleBalloonPops = 0;
+    rival.state = "fiddle-telegraph";
+    rival.jetpackActive = true;
+    rival.vx *= 0.16;
+    rival.vy *= 0.16;
+    rival.facing = Math.sign(rival.fiddleDirectionX) || rival.facing;
+    rival.stats.fiddleDrops += 1;
+    this.#emit("rivalFiddleTelegraph");
+    return true;
+  }
+
+  #updateRivalFiddleTelegraph(dt) {
+    const rival = this.rival;
+    rival.state = "fiddle-telegraph";
+    rival.jetpackActive = true;
+    rival.attackTimer = Math.max(0, rival.attackTimer - dt);
+    const damping = Math.pow(0.66, dt * 60);
+    rival.vx *= damping;
+    rival.vy *= damping;
+    rival.x += rival.vx * dt;
+    rival.y += rival.vy * dt;
+    this.#constrainRivalHorizontally();
+    if (rival.attackTimer <= 0) {
+      rival.attackState = "fiddle-active";
+      rival.attackTimer = RIVAL_FIDDLE_DROP.activeSeconds;
+      rival.state = "fiddle-active";
+      rival.jetpackActive = false;
+      rival.vx =
+        rival.fiddleDirectionX *
+        RIVAL_FIDDLE_DROP.diveSpeed *
+        this.speedMultiplier *
+        rival.chaseSpeedScale;
+      rival.vy =
+        rival.fiddleDirectionY *
+        RIVAL_FIDDLE_DROP.diveSpeed *
+        this.speedMultiplier *
+        rival.chaseSpeedScale;
+      this.#emit("rivalFiddleDrop");
+    }
+  }
+
+  #updateRivalFiddleActive(dt) {
+    const rival = this.rival;
+    rival.state = "fiddle-active";
+    rival.jetpackActive = false;
+    rival.attackTimer = Math.max(0, rival.attackTimer - dt);
+    const speed =
+      RIVAL_FIDDLE_DROP.diveSpeed *
+      this.speedMultiplier *
+      rival.chaseSpeedScale;
+    rival.vx = rival.fiddleDirectionX * speed;
+    rival.vy = rival.fiddleDirectionY * speed;
+    rival.x += rival.vx * dt;
+    rival.y += rival.vy * dt;
+    this.#applyRivalFiddleHits();
+    const reachedEdge =
+      rival.x <= RIVAL_CHASE.edgeInsetX ||
+      rival.x >= GAME_WIDTH - RIVAL_CHASE.edgeInsetX;
+    if (reachedEdge) {
+      this.#constrainRivalHorizontally();
+    }
+    if (rival.attackTimer <= 0 || reachedEdge) {
+      this.#beginRivalFiddleRecovery();
+    }
+  }
+
+  #beginRivalFiddleRecovery() {
+    const rival = this.rival;
+    rival.attackState = "fiddle-recovery";
+    rival.attackTimer = RIVAL_FIDDLE_DROP.recoverySeconds;
+    rival.state = "fiddle-recovery";
+    rival.jetpackActive = true;
+    rival.vx *= 0.18;
+    rival.vy *= 0.18;
+    rival.orbitSide =
+      Math.sign(rival.fiddleDirectionX) || -rival.orbitSide;
+  }
+
+  #updateRivalFiddleRecovery(dt) {
+    const rival = this.rival;
+    rival.state = "fiddle-recovery";
+    rival.jetpackActive = true;
+    rival.attackTimer = Math.max(0, rival.attackTimer - dt);
+    this.#updateRivalJetpack(dt, 0.4);
+    if (rival.attackTimer <= 0) {
+      rival.attackState = "idle";
+      rival.attackKind = "none";
+      rival.state = "chasing";
+      rival.attackCooldown = this.rivalRandom.uniform(
+        RIVAL_FIDDLE_DROP.cooldownMinimumSeconds,
+        RIVAL_FIDDLE_DROP.cooldownMaximumSeconds,
+      );
+    }
+  }
+
+  #applyRivalFiddleHits() {
+    const rival = this.rival;
+    if (!rival.fiddleHitCow && this.#rivalFiddleHitsPlayer()) {
+      rival.fiddleHitCow = true;
+      rival.stats.cowHits += 1;
+      rival.stats.fiddleCowHits += 1;
+      const direction =
+        Math.sign(rival.fiddleDirectionX) || rival.facing || 1;
+      this.player.vx =
+        direction *
+        RIVAL_FIDDLE_DROP.cowKnockbackHorizontal *
+        this.speedMultiplier;
+      this.player.vy = Math.max(
+        this.player.vy,
+        RIVAL_FIDDLE_DROP.cowKnockbackDown * this.speedMultiplier,
+      );
+      this.player.onGround = false;
+      this.player.slashTimer = 0;
+      this.reentryStage = 0;
+      this.hitPauseTimer = Math.max(this.hitPauseTimer, 0.04);
+      this.#emit("rivalFiddleHit");
+    }
+
+    let remaining =
+      RIVAL_FIDDLE_DROP.maximumBalloonPopsPerDrop -
+      rival.fiddleBalloonPops;
+    if (remaining <= 0) {
+      return;
+    }
+    const hitBalloons = this.balloons.filter(
+      (balloon) =>
+        balloon.alive &&
+        this.#rivalMayPopBalloon(balloon) &&
+        this.#rivalCanInteractOnScreen(balloon) &&
+        this.#rivalFiddleHitsCircle(
+          balloon.x,
+          balloon.y,
+          balloon.radius,
+        ),
+    );
+    for (const balloon of hitBalloons) {
+      if (remaining <= 0) {
+        break;
+      }
+      rival.fiddleBalloonPops += 1;
+      rival.stats.fiddleBalloonPops += 1;
+      remaining -= 1;
+      this.#popBalloonForRival(balloon);
+    }
+  }
+
+  #rivalFiddleHitsPlayer() {
+    return this.#rivalFiddleHitsCircle(
+      this.player.x,
+      this.player.y,
+      Math.max(PLAYER.width, PLAYER.height) * 0.42,
+    );
+  }
+
+  #rivalFiddleHitsCircle(x, y, radius) {
+    return this.#circleHitsSegment(
+      x,
+      y,
+      RIVAL_FIDDLE_DROP.collisionRadius + radius,
+      [this.rival.previousX, this.rival.previousY],
+      [this.rival.x, this.rival.y],
+    );
+  }
+
+  #constrainRivalHorizontally() {
+    const rival = this.rival;
+    const left = RIVAL_CHASE.edgeInsetX;
+    const right = GAME_WIDTH - RIVAL_CHASE.edgeInsetX;
+    if (rival.x < left) {
+      rival.x = left;
+      rival.vx = Math.abs(rival.vx) * RIVAL_CHASE.edgeTurnVelocityRetention;
+      rival.facing = 1;
+      rival.orbitSide = 1;
+      rival.stats.edgeTurns += 1;
+    } else if (rival.x > right) {
+      rival.x = right;
+      rival.vx = -Math.abs(rival.vx) * RIVAL_CHASE.edgeTurnVelocityRetention;
+      rival.facing = -1;
+      rival.orbitSide = -1;
+      rival.stats.edgeTurns += 1;
+    }
+  }
+
+  #startRivalBowSwipe(direction) {
+    const rival = this.rival;
+    if (!rival.active || !rival.visible || rival.attackState !== "idle") {
+      return false;
+    }
+    rival.attackState = "telegraph";
+    rival.attackKind = "bow-swipe";
+    rival.lastAttackKind = "bow-swipe";
+    rival.attackTimer = RIVAL_BOW_SWIPE.telegraphSeconds;
+    rival.attackDirection =
+      Math.sign(Number(direction)) ||
+      Math.sign(this.player.x - rival.x) ||
+      rival.facing ||
+      1;
+    rival.attackLockedY = rival.y;
+    rival.attackHitCow = false;
+    rival.attackBalloonPops = 0;
+    rival.attackLockedY = rival.y;
+    rival.facing = rival.attackDirection;
+    rival.state = "swipe-telegraph";
+    rival.stats.bowSwipes += 1;
+    this.#emit("rivalSwipeTelegraph");
+    return true;
+  }
+
+  #applyRivalSwipeHits() {
+    const rival = this.rival;
+    if (!rival.attackHitCow && this.#rivalSwipeHitsPlayer()) {
+      rival.attackHitCow = true;
+      rival.stats.cowHits += 1;
+      this.player.vx =
+        rival.attackDirection *
+        RIVAL_BOW_SWIPE.cowKnockbackHorizontal *
+        this.speedMultiplier;
+      this.player.vy = Math.max(
+        this.player.vy,
+        RIVAL_BOW_SWIPE.cowKnockbackDown * this.speedMultiplier,
+      );
+      this.player.onGround = false;
+      this.player.slashTimer = 0;
+      this.reentryStage = 0;
+      this.hitPauseTimer = Math.max(this.hitPauseTimer, 0.035);
+      this.#emit("rivalHit");
+    }
+
+    if (
+      rival.attackBalloonPops >=
+      RIVAL_BOW_SWIPE.maximumBalloonPopsPerSwipe
+    ) {
+      return;
+    }
+    const hitBalloon = this.balloons.find(
+      (balloon) =>
+        balloon.alive &&
+        !balloon.landmarkApproach &&
+        this.#rivalCanInteractOnScreen(balloon) &&
+        this.#rivalSwipeHitsCircle(balloon.x, balloon.y, balloon.radius),
+    );
+    if (hitBalloon) {
+      rival.attackBalloonPops += 1;
+      this.#popBalloonForRival(hitBalloon);
+    }
+  }
+
+  #rivalSwipeHitsPlayer() {
+    return this.#rivalSwipeHitsCircle(
+      this.player.x,
+      this.player.y,
+      Math.max(PLAYER.width, PLAYER.height) * 0.42,
+    );
+  }
+
+  #rivalSwipeHitsCircle(x, y, radius) {
+    const rival = this.rival;
+    if (
+      Math.abs(y - rival.y) >
+      RIVAL_BOW_SWIPE.hitHalfHeight + radius
+    ) {
+      return false;
+    }
+    const direction = rival.attackDirection;
+    const sweepStart = Math.min(rival.previousX, rival.x);
+    const sweepEnd = Math.max(rival.previousX, rival.x);
+    const left =
+      direction > 0
+        ? sweepStart - RIVAL_CHASE.physicsWidth * 0.25
+        : sweepStart - RIVAL_BOW_SWIPE.hitReach;
+    const right =
+      direction > 0
+        ? sweepEnd + RIVAL_BOW_SWIPE.hitReach
+        : sweepEnd + RIVAL_CHASE.physicsWidth * 0.25;
+    return x + radius >= left && x - radius <= right;
+  }
+
+  #swordHitsRival() {
+    const rival = this.rival;
+    if (
+      this.playMode !== PLAY_MODES.COW_VS_CAT ||
+      !rival.present ||
+      !rival.visible ||
+      !rival.active ||
+      ![
+        "telegraph",
+        "recovery",
+        "boost-telegraph",
+        "boost-recovery",
+        "fiddle-telegraph",
+        "fiddle-recovery",
+      ].includes(rival.attackState) ||
+      !this.#isSlashing() ||
+      this.player.y >= rival.y - 6
+    ) {
+      return false;
+    }
+    return this.#circleHitsSegment(
+      rival.x,
+      rival.y,
+      46,
+      ...this.#swordSegment(),
+    );
+  }
+
+  #knockDownRival() {
+    const rival = this.rival;
+    rival.stats.counterHitsTaken += 1;
+    rival.retreatPending =
+      rival.stats.counterHitsTaken %
+        RIVAL_JETPACK.countersBeforeRetreat ===
+      0;
+    if (rival.retreatPending) {
+      rival.stats.retreats += 1;
+    }
+    rival.attackState = "idle";
+    rival.attackKind = "none";
+    rival.attackTimer = 0;
+    rival.attackCooldown = RIVAL_JETPACK.postCounterAttackDelay;
+    rival.postOvertakeHoldRemaining = 0;
+    rival.overtakeQueued = false;
+    rival.state = "knocked-down";
+    rival.jetpackActive = false;
+    rival.knockdownRemaining = RIVAL_JETPACK.knockdownSeconds;
+    rival.vx =
+      (Math.sign(rival.x - this.player.x) || -this.player.facing) *
+      RIVAL_JETPACK.knockdownHorizontalSpeed;
+    rival.vy = RIVAL_JETPACK.knockdownInitialDownSpeed;
+    this.#bounce(
+      RIVAL_JETPACK.counterBounceSpeed * this.speedMultiplier,
+    );
+    this.fallPeakHeight = this.currentHeight;
+    this.reentryStage = 0;
+    rival.stats.counterBouncesAwarded += 1;
+    this.hitPauseTimer = Math.max(this.hitPauseTimer, 0.04);
+    this.#emit(rival.retreatPending ? "rivalRetreat" : "rivalCounter");
+  }
+
+  #updateRivalKnockdown(dt) {
+    const rival = this.rival;
+    rival.knockdownRemaining = Math.max(0, rival.knockdownRemaining - dt);
+    rival.vy += RIVAL_JETPACK.knockdownGravity * dt;
+    rival.x += rival.vx * dt;
+    rival.y += rival.vy * dt;
+    rival.vx *= Math.pow(0.94, dt * 60);
+    this.#constrainRivalHorizontally();
+    if (this.#rivalIsBelowViewport()) {
+      this.#beginRivalRecovery();
+      return;
+    }
+    if (rival.knockdownRemaining <= 0 && !rival.retreatPending) {
+      rival.state = "chasing";
+      rival.jetpackActive = true;
+      rival.attackState = "idle";
+      rival.attackKind = "none";
+      rival.attackCooldown = RIVAL_JETPACK.postCounterAttackDelay;
+    }
+  }
+
+  #updateLegacyRival(dt) {
+    const rival = this.rival;
+    if (
+      this.playMode !== PLAY_MODES.COW_VS_CAT ||
+      !rival.present ||
+      !rival.movementEnabled
+    ) {
+      return;
+    }
+
+    if (rival.frozen) {
+      rival.state = "frozen";
+      rival.active = true;
+      rival.visible = true;
+      rival.vx = 0;
+      rival.vy = 0;
+      return;
+    }
+
+    if (rival.state === "grace") {
+      rival.graceRemaining = Math.max(0, rival.graceRemaining - dt);
+      if (rival.graceRemaining <= 0) {
+        this.#activateRival(false);
+      }
+      return;
+    }
+
+    if (rival.state === "recovering") {
+      rival.recoveryRemaining = Math.max(
+        0,
+        rival.recoveryRemaining - dt,
+      );
+      if (rival.recoveryRemaining <= 0) {
+        this.#activateRival(true);
+      }
+      return;
+    }
+
+    if (!rival.active || !rival.visible) {
+      return;
+    }
+
+    if (this.#rivalIsBelowViewport()) {
+      this.#beginRivalRecovery();
+      return;
+    }
+
+    rival.entryRemaining = Math.max(0, rival.entryRemaining - dt);
+    rival.lastBounceCooldown = Math.max(
+      0,
+      rival.lastBounceCooldown - dt,
+    );
+    rival.decisionRemaining = Math.max(0, rival.decisionRemaining - dt);
+
+    const tooFarAhead =
+      this.player.y - rival.y > RIVAL_CHASE.tooFarAheadDistance;
+    if (tooFarAhead) {
+      if (!rival.waitingForCow) {
+        rival.waitingForCow = true;
+        rival.stats.breathers += 1;
+        this.#emit("rivalBreather");
+      }
+      rival.pauseRemaining = 0;
+      rival.state = "breather";
+      rival.targetBalloonId = null;
+    } else {
+      if (rival.waitingForCow) {
+        rival.waitingForCow = false;
+        rival.nextBreatherSeconds = this.#nextRivalBreatherDelay();
+      }
+      if (rival.pauseRemaining > 0) {
+        rival.pauseRemaining = Math.max(0, rival.pauseRemaining - dt);
+        rival.state = "breather";
+        if (rival.pauseRemaining <= 0) {
+          rival.state =
+            rival.entryRemaining > 0 ? "reentering" : "chasing";
+          rival.nextBreatherSeconds = this.#nextRivalBreatherDelay();
+        }
+      } else {
+        rival.state = rival.entryRemaining > 0 ? "reentering" : "chasing";
+        rival.nextBreatherSeconds -= dt;
+        if (rival.nextBreatherSeconds <= 0) {
+          this.#startRivalBreather();
+        }
+      }
+    }
+
+    if (rival.decisionRemaining <= 0) {
+      this.#chooseRivalTargetBalloon();
+      rival.decisionRemaining = RIVAL_CHASE.decisionIntervalSeconds;
+    }
+
+    const targetBalloon = this.balloons.find(
+      (balloon) =>
+        balloon.alive && balloon.id === rival.targetBalloonId,
+    );
+    const playerDelta = directDelta(rival.x, this.player.x);
+    const closeInAltitude =
+      Math.abs(rival.y - this.player.y) <=
+      RIVAL_CHASE.engagementVerticalBand;
+    let targetX = targetBalloon?.x ?? this.player.x;
+    if (closeInAltitude) {
+      const playerSide =
+        Math.sign(playerDelta) || (rival.facing >= 0 ? 1 : -1);
+      targetX =
+        this.player.x - playerSide * RIVAL_CHASE.engagementDistanceX;
+    }
+    targetX = clamp(
+      targetX,
+      RIVAL_CHASE.edgeInsetX,
+      GAME_WIDTH - RIVAL_CHASE.edgeInsetX,
+    );
+    const horizontalDelta = directDelta(rival.x, targetX);
+    const speed = this.speedMultiplier * rival.chaseSpeedScale;
+    const breathing = rival.state === "breather";
+
+    if (!breathing && Math.abs(horizontalDelta) > RIVAL_CHASE.horizontalDeadZone) {
+      const direction = Math.sign(horizontalDelta);
+      rival.facing = direction || rival.facing;
+      rival.vx += direction * RIVAL_CHASE.acceleration * speed * dt;
+    } else {
+      rival.vx *= breathing ? 0.78 : RIVAL_CHASE.airDragPerStep;
+    }
+    if (
+      !breathing &&
+      closeInAltitude &&
+      Math.abs(playerDelta) < RIVAL_CHASE.minimumVisualSeparationX
+    ) {
+      const awayDirection =
+        playerDelta >= 0 ? -1 : 1;
+      rival.vx +=
+        awayDirection * RIVAL_CHASE.acceleration * speed * dt * 0.8;
+    }
+    rival.vx = clamp(
+      rival.vx,
+      -RIVAL_CHASE.maxRunSpeed * speed,
+      RIVAL_CHASE.maxRunSpeed * speed,
+    );
+
+    if (rival.onGround && !breathing) {
+      rival.vy = -RIVAL_CHASE.groundJumpSpeed * speed;
+      rival.onGround = false;
+      rival.stats.jumps += 1;
+    }
+
+    rival.vy += RIVAL_CHASE.gravity * this.speedMultiplier * dt;
+    rival.x += rival.vx * dt;
+    rival.y += rival.vy * dt;
+
+    if (rival.x < RIVAL_CHASE.edgeInsetX) {
+      rival.x = RIVAL_CHASE.edgeInsetX;
+      rival.vx = Math.abs(rival.vx) * RIVAL_CHASE.edgeTurnVelocityRetention;
+      rival.facing = 1;
+      rival.targetBalloonId = null;
+      rival.stats.edgeTurns += 1;
+    } else if (rival.x > GAME_WIDTH - RIVAL_CHASE.edgeInsetX) {
+      rival.x = GAME_WIDTH - RIVAL_CHASE.edgeInsetX;
+      rival.vx = -Math.abs(rival.vx) * RIVAL_CHASE.edgeTurnVelocityRetention;
+      rival.facing = -1;
+      rival.targetBalloonId = null;
+      rival.stats.edgeTurns += 1;
+    }
+
+    if (this.#rivalIsBelowViewport()) {
+      this.#beginRivalRecovery();
+      return;
+    }
+
+    if (!breathing && rival.vy > 0) {
+      const landingBalloon = this.balloons.find(
+        (balloon) => this.#rivalTouchesBalloon(balloon),
+      );
+      if (landingBalloon) {
+        const contactY =
+          landingBalloon.y - landingBalloon.radius * 0.58;
+        rival.y = contactY - RIVAL_CHASE.physicsHeight * 0.5;
+        rival.vy = -RIVAL_CHASE.balloonBounceSpeed * speed;
+        rival.onGround = false;
+        rival.targetBalloonId = null;
+        rival.lastBounceBalloonId = landingBalloon.id;
+        rival.lastBounceCooldown =
+          RIVAL_CHASE.repeatedBalloonCooldownSeconds;
+        rival.stats.balloonBounces += 1;
+        this.#popBalloonForRival(landingBalloon);
+        this.#emit("rivalBounce");
+      }
+    }
+
+    const floorY = WORLD_FLOOR_Y - RIVAL_CHASE.physicsHeight * 0.5;
+    if (rival.y > floorY) {
+      rival.y = floorY;
+      rival.vy = 0;
+      rival.onGround = true;
+      rival.targetBalloonId = null;
+    } else {
+      rival.onGround = false;
+    }
+  }
+
+  #activateRival(reentry) {
+    const rival = this.rival;
+    const spawnOnLeft = this.player.x >= GAME_WIDTH * 0.5;
+    rival.x = reentry
+      ? clamp(
+          rival.recoveryX,
+          RIVAL_CHASE.edgeInsetX,
+          GAME_WIDTH - RIVAL_CHASE.edgeInsetX,
+        )
+      : spawnOnLeft
+        ? RIVAL_CHASE.entryInsetX
+        : GAME_WIDTH - RIVAL_CHASE.entryInsetX;
+    const floorY = WORLD_FLOOR_Y - RIVAL_CHASE.physicsHeight * 0.5;
+    const visibleBottomY =
+      this.cameraY +
+      this.viewportHeight -
+      RIVAL_CHASE.entryVisibleBottomInset;
+    rival.y = reentry ? Math.min(floorY, visibleBottomY) : floorY;
+    rival.previousX = rival.x;
+    rival.previousY = rival.y;
+    rival.vx = 0;
+    rival.vy = reentry ? -180 * rival.chaseSpeedScale : 0;
+    rival.facing = Math.sign(directDelta(rival.x, this.player.x)) || 1;
+    rival.orbitSide = Math.sign(rival.x - this.player.x) || -1;
+    rival.onGround = false;
+    rival.jetpackActive = true;
+    rival.visible = true;
+    rival.active = true;
+    rival.state = reentry ? "reentering" : "chasing";
+    rival.entryRemaining = reentry ? 0.85 : 0.55;
+    rival.recoveryRemaining = 0;
+    rival.graceRemaining = 0;
+    rival.pauseRemaining = 0;
+    rival.waitingForCow = false;
+    rival.nextBreatherSeconds = this.#nextRivalBreatherDelay();
+    rival.targetBalloonId = null;
+    rival.decisionRemaining = 0;
+    rival.attackState = "idle";
+    rival.attackKind = "none";
+    rival.attackTimer = 0;
+    rival.attackCooldown = reentry
+      ? RIVAL_JETPACK.postCounterAttackDelay
+      : RIVAL_BOW_SWIPE.initialDelaySeconds;
+    rival.attackHitCow = false;
+    rival.attackBalloonPops = 0;
+    rival.boostHitCow = false;
+    rival.boostClanked = false;
+    rival.boostBalloonPops = 0;
+    rival.boostLockedX = rival.x;
+    rival.boostOvertookCow = false;
+    rival.postOvertakeHoldRemaining = 0;
+    rival.postOvertakeHoldY = rival.y;
+    rival.overtakeQueued = false;
+    rival.fiddleDirectionX = 0;
+    rival.fiddleDirectionY = 1;
+    rival.fiddleTargetX = rival.x;
+    rival.fiddleTargetY = rival.y;
+    rival.fiddleHitCow = false;
+    rival.fiddleBalloonPops = 0;
+    rival.exhaustEmitRemaining = 0;
+    rival.exhaustTrail = [];
+    rival.rubberBandActive = false;
+    rival.rubberBandPending = false;
+    rival.rubberBandStrength = 0;
+    rival.rubberBandScreenY = rival.y - this.cameraY;
+    rival.rubberBandVerticalLag = rival.y - this.player.y;
+    rival.rubberBandOffscreenSeconds = 0;
+    rival.postOvertakeHoldRemaining = 0;
+    rival.overtakeQueued = false;
+    rival.knockdownRemaining = 0;
+    rival.retreatPending = false;
+    rival.stats.entries += 1;
+    this.#emit(reentry ? "rivalReturn" : "rivalEnter");
+  }
+
+  #beginRivalOpeningGrace() {
+    const rival = this.rival;
+    rival.state = "grace";
+    rival.graceRemaining = RIVAL_CHASE.openingGraceSeconds;
+    rival.visible = false;
+    rival.active = false;
+    rival.jetpackActive = false;
+    rival.vx = 0;
+    rival.vy = 0;
+  }
+
+  #beginRivalRecovery() {
+    const rival = this.rival;
+    if (rival.state === "recovering") {
+      return;
+    }
+    rival.state = "recovering";
+    rival.recoveryX = clamp(
+      rival.x,
+      RIVAL_CHASE.edgeInsetX,
+      GAME_WIDTH - RIVAL_CHASE.edgeInsetX,
+    );
+    rival.active = false;
+    rival.visible = false;
+    rival.jetpackActive = false;
+    rival.vx = 0;
+    rival.vy = 0;
+    rival.attackState = "idle";
+    rival.attackKind = "none";
+    rival.attackTimer = 0;
+    rival.recoveryRemaining = RIVAL_CHASE.recoveryDelaySeconds;
+    rival.rubberBandActive = false;
+    rival.rubberBandPending = false;
+    rival.rubberBandStrength = 0;
+    rival.rubberBandOffscreenSeconds = 0;
+    rival.waitingForCow = false;
+    rival.targetBalloonId = null;
+    rival.stats.recoveries += 1;
+    this.#emit("rivalRecover");
+  }
+
+  #startRivalBreather() {
+    const rival = this.rival;
+    if (rival.pauseRemaining > 0) {
+      return;
+    }
+    rival.pauseRemaining = this.rivalRandom.uniform(
+      RIVAL_CHASE.breatherMinimumDurationSeconds,
+      RIVAL_CHASE.breatherMaximumDurationSeconds,
+    );
+    rival.state = "breather";
+    rival.waitingForCow = false;
+    rival.targetBalloonId = null;
+    rival.stats.breathers += 1;
+    this.#emit("rivalBreather");
+  }
+
+  #nextRivalBreatherDelay() {
+    return this.rivalRandom.uniform(
+      RIVAL_CHASE.breatherMinimumDelaySeconds,
+      RIVAL_CHASE.breatherMaximumDelaySeconds,
+    );
+  }
+
+  #chooseRivalTargetBalloon() {
+    const rival = this.rival;
+    const current = this.balloons.find(
+      (balloon) =>
+        balloon.alive &&
+        balloon.id === rival.targetBalloonId &&
+        this.#rivalMayPopBalloon(balloon),
+    );
+    if (current) {
+      const verticalDelta = rival.y - current.y;
+      const horizontalDistance = Math.abs(
+        directDelta(rival.x, current.x),
+      );
+      if (
+        verticalDelta >= -190 &&
+        verticalDelta <= RIVAL_CHASE.targetMaximumRise &&
+        current.y >= this.player.y - RIVAL_CHASE.maximumLeadDistance &&
+        horizontalDistance <=
+          RIVAL_CHASE.targetMaximumHorizontalDistance + 45
+      ) {
+        return current;
+      }
+    }
+
+    const candidates = this.balloons
+      .filter((balloon) => {
+        if (!balloon.alive) {
+          return false;
+        }
+        if (!this.#rivalMayPopBalloon(balloon)) {
+          return false;
+        }
+        if (
+          balloon.y <
+          this.player.y - RIVAL_CHASE.maximumLeadDistance
+        ) {
+          return false;
+        }
+        if (
+          rival.lastBounceCooldown > 0 &&
+          balloon.id === rival.lastBounceBalloonId
+        ) {
+          return false;
+        }
+        const rise = rival.y - balloon.y;
+        const horizontalDistance = Math.abs(
+          directDelta(rival.x, balloon.x),
+        );
+        return (
+          rise >= RIVAL_CHASE.targetMinimumRise &&
+          rise <= RIVAL_CHASE.targetMaximumRise &&
+          horizontalDistance <= RIVAL_CHASE.targetMaximumHorizontalDistance
+        );
+      })
+      .map((balloon) => {
+        const rise = rival.y - balloon.y;
+        const horizontalDistance = Math.abs(
+          directDelta(rival.x, balloon.x),
+        );
+        return {
+          balloon,
+          score:
+            rise * 1.35 -
+            horizontalDistance * 0.72 +
+            (balloon.routeRole === "side"
+              ? RIVAL_CHASE.sideBalloonTargetBonus
+              : 0),
+        };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    rival.targetBalloonId = candidates[0]?.balloon.id || null;
+    return candidates[0]?.balloon || null;
+  }
+
+  #rivalTouchesBalloon(balloon) {
+    const rival = this.rival;
+    if (
+      !balloon.alive ||
+      !this.#rivalMayPopBalloon(balloon) ||
+      !this.#rivalCanInteractOnScreen(balloon)
+    ) {
+      return false;
+    }
+    if (
+      balloon.y <
+      this.player.y - RIVAL_CHASE.maximumLeadDistance
+    ) {
+      return false;
+    }
+    if (
+      rival.lastBounceCooldown > 0 &&
+      balloon.id === rival.lastBounceBalloonId
+    ) {
+      return false;
+    }
+    const contactY = balloon.y - balloon.radius * 0.58;
+    const previousFootY =
+      rival.previousY + RIVAL_CHASE.physicsHeight * 0.5;
+    const footY = rival.y + RIVAL_CHASE.physicsHeight * 0.5;
+    const horizontalDistance = Math.abs(
+      directDelta(rival.x, balloon.x),
+    );
+    return (
+      previousFootY <= contactY + RIVAL_CHASE.balloonContactPadding &&
+      footY >= contactY &&
+      horizontalDistance <=
+        balloon.radius + RIVAL_CHASE.physicsWidth * 0.32
+    );
+  }
+
+  #rivalMayPopBalloon(balloon) {
+    if (!balloon?.alive || balloon.routeRole === "leaderboard") {
+      return false;
+    }
+    if (balloon.routeRole === "side") {
+      return true;
+    }
+    if (balloon.landmarkApproach) {
+      return false;
+    }
+    return this.balloons.some(
+      (alternative) =>
+        alternative !== balloon &&
+        alternative.alive &&
+        alternative.routeRole === "side" &&
+        Math.abs(alternative.y - balloon.y) <=
+          RIVAL_CHASE.alternateBalloonVerticalBand &&
+        Math.abs(directDelta(balloon.x, alternative.x)) <=
+          RIVAL_CHASE.alternateBalloonMaximumHorizontalDistance,
+    );
+  }
+
+  #rivalCanInteractOnScreen(balloon) {
+    const margin = RIVAL_CHASE.visibleInteractionMargin;
+    const rivalScreenY = this.rival.y - this.cameraY;
+    const balloonScreenY = balloon.y - this.cameraY;
+    return (
+      rivalScreenY >= -margin &&
+      rivalScreenY <= this.viewportHeight + margin &&
+      balloonScreenY >= -margin &&
+      balloonScreenY <= this.viewportHeight + margin
+    );
+  }
+
+  #rivalIsBelowViewport() {
+    return (
+      this.rival.y - this.cameraY >
+      this.viewportHeight + RIVAL_CHASE.recoveryOffscreenMargin
+    );
+  }
+
+  #popBalloonForRival(balloon) {
+    balloon.alive = false;
+    balloon.poppedTimer = 0.001;
+    if (!this.debugBalloonOverride) {
+      this.poppedBalloonIds.add(balloon.id);
+    }
+    this.popEffects.push({
+      x: balloon.x,
+      y: balloon.y,
+      age: 0,
+      color: balloon.color,
+      boosted: false,
+      source: "rival",
+    });
+    this.rival.stats.balloonPops += 1;
+    if (balloon.routeRole === "side") {
+      this.rival.stats.sideBalloonPops += 1;
+    } else {
+      this.rival.stats.mainBalloonPops += 1;
+    }
+    this.#emit("rivalBalloonPop");
   }
 
   #updateReentryState() {
@@ -1641,7 +4161,11 @@ export class PhaseSixGame {
       ].join("-");
       const duplicateIndex = duplicates.get(duplicateKey) || 0;
       duplicates.set(duplicateKey, duplicateIndex + 1);
-      const id = leaderboardBalloonIdentity(entry, duplicateIndex);
+      const id = leaderboardBalloonIdentity(
+        this.playMode,
+        entry,
+        duplicateIndex,
+      );
       const current = currentById.get(id);
       const popped = this.poppedLeaderboardBalloonIds.has(id);
       return {
@@ -1677,7 +4201,9 @@ export class PhaseSixGame {
       this.cameraY +
       this.viewportHeight +
       ROUTE.retainBelowViewportPixels;
-    const generated = this.route.spawnThrough(activeTopY);
+    const generated = this.#ensureRivalRouteRedundancy(
+      this.route.spawnThrough(activeTopY),
+    );
     if (generated.length) {
       this.#archiveBalloons(generated);
       if (!this.tutorialBalloonId) {
@@ -1749,6 +4275,59 @@ export class PhaseSixGame {
     );
   }
 
+  #ensureRivalRouteRedundancy(generated) {
+    if (
+      this.playMode !== PLAY_MODES.COW_VS_CAT ||
+      this.debugBalloonOverride ||
+      !generated.length
+    ) {
+      return generated;
+    }
+    const results = [...generated];
+    const mainBalloons = generated.filter(
+      (balloon) =>
+        balloon.routeRole === "main" && !balloon.landmarkApproach,
+    );
+    for (const main of mainBalloons) {
+      const hasNearbySide = results.some(
+        (balloon) =>
+          balloon.routeRole === "side" &&
+          Math.abs(balloon.y - main.y) <= ROUTE.sideYJitter + 1,
+      );
+      if (hasNearbySide) {
+        continue;
+      }
+      const numericId = Number.parseInt(main.id.replace(/\D/g, ""), 10) || 1;
+      const radius =
+        RIVAL_ROUTE.backupRadiusMinimum +
+        (numericId %
+          (RIVAL_ROUTE.backupRadiusMaximum -
+            RIVAL_ROUTE.backupRadiusMinimum +
+            1));
+      const margin = radius + 32;
+      const direction = main.x <= GAME_WIDTH * 0.5 ? 1 : -1;
+      const x = clamp(
+        main.x + direction * RIVAL_ROUTE.backupHorizontalOffset,
+        margin,
+        GAME_WIDTH - margin,
+      );
+      results.push({
+        id: `${main.id}-combat-backup`,
+        x,
+        y: main.y,
+        radius,
+        color: ROUTE.colors[(numericId + 1) % ROUTE.colors.length],
+        wobble: ((numericId * 1.61803398875) % 1) * Math.PI * 2,
+        routeRole: "side",
+        landmarkApproach: null,
+        alive: true,
+        poppedTimer: 0,
+      });
+      this.rivalRouteBackupCount += 1;
+    }
+    return results;
+  }
+
   #archiveBalloons(balloons) {
     for (const balloon of balloons) {
       const chunkIndex = Math.floor(balloon.y / ROUTE.historyChunkPixels);
@@ -1808,7 +4387,11 @@ export class PhaseSixGame {
     this.newBest = this.finalScore > this.savedBestHeight;
     if (this.newBest) {
       this.savedBestHeight = this.finalScore;
-      writeSavedBest(this.savedBestHeight);
+      this.savedBestByMode[this.playMode] = this.savedBestHeight;
+      writeSavedBest(
+        this.savedBestHeight,
+        scoreStorageKeyForMode(this.playMode),
+      );
     }
     this.qualifiesForLeaderboard = this.finalScore > 0;
     this.nameEntry = null;
@@ -2024,4 +4607,9 @@ export const PhaseFiveGame = PhaseSixGame;
 export const PhaseSevenGame = PhaseSixGame;
 export const PhaseNineGame = PhaseSixGame;
 export const PhaseTenGame = PhaseSixGame;
+export const PhaseElevenGame = PhaseSixGame;
+export const PhaseTwelveGame = PhaseSixGame;
+export const PhaseThirteenGame = PhaseSixGame;
+export const PhaseFourteenGame = PhaseSixGame;
+export const PhaseFifteenGame = PhaseSixGame;
 export const OverTheMoonGame = PhaseSixGame;

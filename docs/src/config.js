@@ -1,8 +1,8 @@
 export const LOGICAL_WIDTH = 540;
 export const REFERENCE_LOGICAL_HEIGHT = 800;
 export const DESKTOP_MAX_WIDTH = 500;
-export const PHASE = 10;
-export const BUILD_VERSION = "10.3.1";
+export const PHASE = 16;
+export const BUILD_VERSION = "16.0.2";
 export const RELEASE_CHANNEL = "production";
 
 export const RELEASE_CONFIG = Object.freeze({
@@ -47,6 +47,46 @@ const assetUrl = (filename) =>
 
 export const ASSET_MANIFEST = Object.freeze([
   Object.freeze({ id: "splash", src: assetUrl("splash_over_the_moon.png") }),
+  Object.freeze({
+    id: "rival-cat-jetpack-hover",
+    src: assetUrl("rival_cat_jetpack_hover_v2.png"),
+  }),
+  Object.freeze({
+    id: "rival-cat-jetpack-bow-windup",
+    src: assetUrl("rival_cat_jetpack_bow_windup_v2.png"),
+  }),
+  Object.freeze({
+    id: "rival-cat-jetpack-bow-slash",
+    src: assetUrl("rival_cat_jetpack_bow_slash_v2.png"),
+  }),
+  Object.freeze({
+    id: "rival-cat-jetpack-fiddle-heavy",
+    src: assetUrl("rival_cat_jetpack_fiddle_heavy_v2.png"),
+  }),
+  Object.freeze({
+    id: "rival-cat-jetpack-concerto",
+    src: assetUrl("rival_cat_jetpack_concerto_v2.png"),
+  }),
+  Object.freeze({
+    id: "rival-cat-jetpack-knockdown",
+    src: assetUrl("rival_cat_jetpack_knockdown_v2.png"),
+  }),
+  Object.freeze({
+    id: "rival-cat-jetpack-boost-charge",
+    src: assetUrl("rival_cat_jetpack_boost_charge_v2.png"),
+  }),
+  Object.freeze({
+    id: "rival-cat-jetpack-boost-active",
+    src: assetUrl("rival_cat_jetpack_boost_active_v2.png"),
+  }),
+  Object.freeze({
+    id: "rival-cat-jetpack-fiddle-drop-windup",
+    src: assetUrl("rival_cat_jetpack_fiddle_drop_windup_v1.png"),
+  }),
+  Object.freeze({
+    id: "rival-cat-jetpack-fiddle-drop-active",
+    src: assetUrl("rival_cat_jetpack_fiddle_drop_active_v1.png"),
+  }),
   Object.freeze({ id: "cat-idle", src: assetUrl("cat_idle.png") }),
   Object.freeze({ id: "cat-jump", src: assetUrl("cat_jump.png") }),
   Object.freeze({ id: "cat-slash", src: assetUrl("cat_slash.png") }),

@@ -902,9 +902,505 @@ Original prompt: phase 1
 
 ## Current TODO
 
+- Rival animation art pass: a direct full-character ImageGen edit was rejected
+  internally because it changed the approved cat's face, proportions, pose,
+  and fiddle. The safer pipeline now generates the jetpack separately and
+  composites it behind the exact approved transparent cat.
+- Proposed master anchor is
+  `cat-sword-climb/assets/rival_cat_jetpack_anchor_v1.png` at the same 768 ×
+  512 canvas and exact cat placement as `rival_cat_concept.png`. Every fully
+  opaque original cat pixel is byte-identical; only the brass twin-nozzle pack
+  behind it is new. Await user approval before deriving state frames or
+  changing the renderer.
+- After anchor approval, derive consistent same-canvas ImageGen edits in this
+  order: hover/idle anchor, bow windup, active swipe, follow-through/recovery,
+  and knocked-down. Keep flames separate and procedurally animated from fixed
+  nozzle anchors; normalize every frame to the same canvas and 125 px render
+  width before integration.
+- Phase 13 local build `13.0.0` replaces balloon traversal with two-axis
+  jetpack pursuit. Cat contact no longer pops balloons; only the telegraphed
+  bow swipe can remove one ordinary route balloon as collateral.
+- The quick attack has separate `0.58 s` warning, `0.20 s` active, and `0.52 s`
+  recovery windows. A hit knocks the cow horizontally and downward. Slashing
+  from above during warning or recovery knocks the cat down; every third
+  counter triggers an offscreen retreat and return.
+- Cow vs Cat now adds deterministic side-route redundancy while preserving
+  every landmark-approach balloon. Cat pops remain isolated from cow score,
+  combo, bounce, and fatal-floor state. Classic generation, top-player
+  balloons, Firebase reads/writes, and public menu behavior are unchanged.
+- DEV tools add `TEST BOW SWIPE` alongside release/freeze and chase-speed
+  tuning. Deterministic logic and 390 × 844 browser audits pass the jetpack,
+  warning, swipe pop, cow hit, counter, three-hit retreat, direct edge turn,
+  audio event, and zero-Firebase-write checks with 26/26 assets and no browser
+  errors.
+- The exact `13.0.0` release and generated Pages root pass all 47 hashes, the
+  1,000-seed / 1,672,034-balloon Classic route-fairness audit, true offline
+  reload, touch swiping, audio, fixed-width desktop play, five altitude
+  performance samples, and the focused packaged Cow vs Cat flow with zero
+  browser errors or Firebase writes.
+- The persistent LAN preview now serves the exact Phase 13 package from
+  `/private/tmp/over-the-moon-preview-1300-phase13` at
+  `http://192.168.86.20:5197/html-remake/?dev=1`. The required gameplay client
+  loaded `13.0.0`, all 26 assets, and verified movement/jump input with no game
+  or audio error.
+- Fiddle smash, Cat's Concerto, public mode access, and rival-mode Firebase
+  submission remain deferred. Do not push or deploy Phase 13 until the user
+  explicitly asks.
+
+## Phase 13.1 regenerated rival sprite set
+
+- The rejected procedural/composited jetpack presentation is no longer used by
+  the game. ImageGen produced one coherent realistic orange-tabby rival with a
+  fitted brass jetpack, leather harness, navy scarf, fiddle, and bow, then
+  derived six identity-matched frames: hover, bow wind-up, bow slash, fiddle
+  heavy, Cat's Concerto, and knocked-down tumble.
+- Chroma was removed with the imagegen helper and every final sprite was
+  normalized to the same transparent 768 x 512 canvas. The six shipping source
+  assets use the `rival_cat_jetpack_*_v2.png` names in
+  `cat-sword-climb/assets/`.
+- Existing Phase 13 gameplay now renders hover, bow wind-up, bow slash, and
+  knocked-down frames from game state. Fiddle-heavy and Concerto are installed
+  and precached for their later gameplay phases but remain mechanically
+  disabled. The jetpack is part of every generated pose; only its flickering
+  exhaust is drawn and animated separately behind the sprite.
+- `RIVAL_FOUNDATION.renderWidth` is 160 px because the new keyed frames include
+  more transparent padding. The visible cat is approximately 82 px tall,
+  preserving the approved roughly-80%-of-cow scale without changing physics,
+  collision, or attack reach.
+- Local build `13.1.0` contains 31/31 game assets and 52 verified release files.
+  The 1,000-seed / 1,672,034-balloon release audit, Phase 13 logic audit,
+  required gameplay client, focused source and packaged Cow vs Cat browser
+  flows, true offline reload, touch controls, fixed-width desktop layout, and
+  five-altitude performance matrix all pass with zero browser errors and zero
+  Firebase writes. Hover, telegraph, slash, and knockdown captures were
+  visually inspected.
+- Build remains local only. Do not build Pages, push, or deploy until the user
+  explicitly asks.
+
+## Phase 11–12 history
+
+- Physical review approved the rival cat design but found its initial 190 px
+  render width too large. After reviewing a 60% pass, build `11.0.2` settles
+  at 125 px wide: the 3:2 concept renders about 83 px tall, approximately 80%
+  of the cow's 104 px idle height. The exact packaged LAN preview and focused
+  390 x 844 audit passed with 26/26 assets and zero browser errors.
+
+- Phase 11 local development build `11.0.2` establishes a DEV-only Cow vs Cat
+  mode without exposing it on the public splash. It includes an inactive
+  ginger-and-white cat concept holding a fiddle and separate bow, plus DEV
+  controls for starting Classic/Cow vs Cat and staging the cat left or right.
+- The rival is intentionally non-moving, non-colliding, and non-attacking in
+  this phase. Bow swipe, fiddle smash, Cat's Concerto, pursuit, knockdown, and
+  retreat behavior remain future phases.
+- Cow vs Cat uses a separate local-best storage namespace. Classic Firebase
+  score submission and Classic leaderboard balloons are disabled in the rival
+  mode; the Phase 11 logic audit produced zero network writes. Switching back
+  to Classic restores the established Classic local best and top-player
+  balloons.
+- The focused 390 x 844 Phase 11 browser audit passed public-menu isolation,
+  inactive rival rendering, left/right DEV staging, score isolation, rival
+  retry, and Classic restoration with 26/26 assets and zero browser errors.
+  The required game client and full source/packaged release matrix also passed,
+  including touch swipe, audio, true offline reload, fixed-width desktop play,
+  Black Hole warp, speed lock, and performance checks.
+- The Phase 11 scope and review procedure are documented in
+  `html-remake/PHASE_11_COW_VS_CAT_FOUNDATION.md`. Next decision: approve or
+  revise the cat concept, then begin Phase 12 pursuit movement without attacks.
+
 - Build `10.3.1` was physically approved on iPhone and deployed from `main` in
   commit `922dbb6`. GitHub Pages run `30557720354` completed successfully. The
   live HTTPS URL reported the production version and cache as `10.3.1`, loaded
   25/25 assets, read the established Firebase top ten, started gameplay, and
   accepted movement/jump input with no browser or game errors.
 - No release blocker remains. Firebase data and rules were not changed.
+
+- Phase 12.1 chase revision removes the renderer-drawn ellipse beneath the
+  rival; the cat asset now appears without an artificial shadow.
+- The cat no longer uses cow-style horizontal wrapping. Its target math is
+  direct across the field, and crossing either screen edge clamps it in place
+  and turns its velocity back inward.
+- Rival balloon landings now pop the contacted balloon and create the normal
+  soft pop effect/sound, while leaving the cow's pop count, combo, best combo,
+  bounce, hit pause, and fatal-floor state unchanged.
+- Route fairness reserves every landmark-approach balloon and any lone main
+  balloon for the cow. The cat prefers side balloons and may only consume a
+  main balloon when a nearby live side alternative remains.
+- Cat recovery now starts only after its center has moved 48 logical pixels
+  below the visible viewport. It remembers its departure x-position and
+  returns from the bottom at that same x after the existing short delay.
+- The focused Phase 12 chase logic audit passes side/main/landmark pop rules,
+  cow score/combo isolation, direct edge turns, visible-screen recovery, and
+  same-x return.
+- The exact `12.1.0` source, release package, and generated Pages root pass all
+  47 hashes, the 1,000-seed / 1,672,034-balloon fairness audit, Classic
+  leaderboard isolation, true offline reload, touch controls, fixed-width
+  desktop layout, five altitude performance samples, and both focused Cow vs
+  Cat browser flows with 26/26 assets, zero Firebase writes, and zero browser
+  errors. The cat-pop, no-shadow, edge-turn, and bottom-return captures were
+  visually inspected.
+- The persistent LAN preview now serves the exact package from
+  `/private/tmp/over-the-moon-preview-1210-phase12-1` at
+  `http://192.168.86.20:5197/html-remake/?dev=1`; the required client loaded
+  `12.1.0`, started a run, accepted movement/jump input, and reported no game
+  error.
+
+## Phase 14 — Jet polish and Moonshot
+
+- Added pose-specific jetpack exhaust anchors for hover, bow, charge, active
+  boost, and knockdown frames. A capped 0.42-second translucent heat-haze trail
+  now follows the nozzle and emits more densely during a boost.
+- Added a counter reward: a successful vulnerable-window hit gives the cow a
+  540-speed upward bump, below the 970-speed balloon bounce, without changing
+  the current combo, score, pop count, best combo, or floor state.
+- Added the cat's Moonshot attack. The cat moves beneath the cow, displays a
+  0.58-second locked warning lane, boosts vertically for 0.32 seconds, and
+  recovers for 0.64 seconds. The active boost is not counterable, cannot be
+  selected twice in a row, and knocks the cow sideways and down on contact.
+- Moonshot may pop no more than two ordinary route balloons. Landmark-approach
+  and leaderboard balloons are protected, and collateral pops do not alter
+  the cow's scoring or combo state.
+- Generated and normalized matching transparent boost-charge and boost-active
+  frames while preserving the approved tabby, fitted brass jetpack, harness,
+  scarf, fiddle, and bow design.
+- Added `TEST BOOST` and `TEST COUNTER BOUNCE` DEV controls plus Phase 14 state,
+  stats, and audio diagnostics. The deterministic logic audit and focused
+  390 x 844 browser audit pass with 33/33 assets and zero Firebase writes.
+- Phase 14 is still local only; no GitHub Pages build, push, or deployment has
+  been performed.
+- Final build `14.0.0` packages 54 verified files and 33/33 game assets. The
+  1,000-seed / 1,672,034-balloon release audit, existing bow-swipe regression,
+  required gameplay client, focused source and packaged Phase 14 browser
+  flows, true offline reload, touch controls, fixed-width desktop layout, and
+  five-altitude performance matrix all pass with zero browser errors and zero
+  Firebase writes.
+- Hover exhaust, boost telegraph, active Moonshot, counter bounce, DEV tools,
+  and the required-client gameplay capture were visually inspected at phone
+  size. The temporary exact-package preview is available at
+  `http://192.168.86.20:5197/html-remake/?dev=1`.
+- Phase 14.0.1 removes the large procedural swipe crescents, active Moonshot
+  beam/arrowhead, and `SWIPE!` / `BOOST!` labels after physical review found
+  they did not match the photographic game art. Swipe telegraphing is now a
+  small low-opacity gold glint, Moonshot uses only a faint dashed guide during
+  wind-up, and the counter ring is softer. Attack timing and collision rules
+  are unchanged.
+- Build `14.0.1` passes syntax, Phase 13/14 logic, required gameplay-client,
+  source and packaged swipe/Moonshot browser flows, 54-file hash verification,
+  33/33 offline assets, and the 1,000-seed route audit. Phone-size wind-up,
+  active attack, and counter captures were visually inspected with no browser
+  errors or Firebase writes. Port 5197 now serves the exact 14.0.1 package.
+
+## Phase 15 — Rival pressure and Fiddle Drop
+
+- Cow vs Cat now uses a wider moving orbit: the cat stages roughly 180–230
+  logical pixels to one side of the cow with slow vertical variation, while an
+  80-pixel edge inset keeps the full generated sprite on-screen. It still
+  cannot wrap through the left or right edge.
+- The attack director is more aggressive and selects Bow Swipe, Moonshot, or
+  Fiddle Drop at 45/30/25 relative weights. Cooldowns and opening grace are
+  shorter, and immediate attack repeats are suppressed whenever another move
+  is eligible.
+- Added Fiddle Drop: the cat stages above the cow, locks a predicted diagonal
+  route during a 0.65-second warning, dives at 930 logical pixels per second,
+  and recovers on the far side. The route does not track after lock, making the
+  move consistently dodgeable.
+- Fiddle Drop can hit the cow sideways and downward or pop at most two ordinary
+  route balloons. Landmark and leaderboard balloons remain protected, and cat
+  collateral never changes the cow's score, combo, pop count, bounce, or floor
+  state. The warning and recovery can be countered; the active dive cannot.
+- Built-in ImageGen produced matching wind-up and active-dive frames with the
+  established orange tabby, navy scarf, brass jetpack, harness, fiddle, and
+  separate bow. Chroma-key processing produced transparent 768 x 512 game
+  assets with clean edges.
+- Added restrained Fiddle Drop audio, a faint warning guide, state and stats
+  diagnostics, and a `TEST FIDDLE DROP` DEV control. The focused deterministic
+  and phone browser audits pass all attack-pressure, trajectory, collision,
+  protection, and zero-Firebase-write checks with 35/35 assets.
+- Phase 15 scope and validation are documented in
+  `html-remake/PHASE_15_RIVAL_PRESSURE_FIDDLE_DROP.md`. Build remains local;
+  no GitHub push or deployment has been performed.
+- Final `15.0.0` packaging contains 56 hash-verified files and 35/35 offline
+  assets. The 1,000-seed / 1,672,034-balloon route audit, required gameplay
+  client, source and packaged Fiddle Drop flows, packaged Bow Swipe and
+  Moonshot regressions, offline reload, touch swiping, audio, fixed-width
+  desktop layout, and five-altitude performance matrix all pass with zero
+  browser errors and zero Firebase writes.
+- Phone-size captures of the wider orbit, Fiddle Drop wind-up, active dive,
+  cow hit, and DEV controls were visually inspected. The rival edge inset was
+  raised to 80 logical pixels after review so the full generated cat remains
+  visible at the wider staging distance.
+- The persistent LAN preview now serves the exact Phase 15 package at
+  `http://192.168.86.20:5197/html-remake/?dev=1&build=15.0.0` and passes the
+  focused Phase 15 browser audit. The preview is local only; GitHub and
+  Firebase production state were not changed.
+
+## Phase 15.1 — Combo catch-up
+
+- Added a camera-relative vertical rubber band so the cat begins catching up
+  before a rapid combo climb carries it below the screen. It activates in the
+  lower 30% of the camera or after 190 logical pixels of vertical lag and
+  blends only vertical acceleration/top speed up to 1.55×. Horizontal orbit,
+  edge clamping, scale, and cow-style wrapping remain unchanged.
+- Committed Bow Swipe, Moonshot, and Fiddle Drop states ignore the assist until
+  their recovery window, preserving authored timing and locked trajectories.
+  New attack selection is suppressed while catch-up is active or queued, then
+  resumes after the cat returns to the normal visible pursuit band.
+- A three-second below-screen failsafe delegates to the established
+  retreat/reentry path. Runtime state exposes active/pending status, strength,
+  vertical scale, screen position, lag, current/max offscreen time, activation
+  count, and failsafe count for validation.
+- The deterministic 1.75× combo launch reached the 1.55× cap, kept the cat
+  onscreen for the full ascent, selected no attack during catch-up, preserved a
+  committed Fiddle Drop, avoided a ground-level false positive, and triggered
+  the forced three-second failsafe correctly. The focused 390 × 844 browser
+  run used a 1,169-unit logical viewport, observed zero offscreen time, and
+  returned the cat from screen Y 924 to Y 247 with zero Firebase writes or
+  browser errors.
+- Build identity is now `15.1.0` for cache separation. The exact 56-file,
+  35-asset package passes the new combo-ascent source/packaged/LAN browser
+  flow, Phase 13–15 attack regressions, required gameplay client, 1,000-seed
+  route audit, offline reload, touch controls, fixed-width desktop layout, and
+  five-altitude performance matrix with zero browser errors and zero Firebase
+  writes.
+- The persistent preview now serves the exact `15.1.0` package at
+  `http://192.168.86.20:5197/html-remake/?dev=1&build=15.1.0`. GitHub and
+  Firebase production state remain unchanged.
+
+## Build 15.1.1 — Desktop window framing fix
+
+- Fixed the non-maximized desktop layout that could render the game as a wide
+  horizontal slice. The desktop media query and JavaScript layout state had
+  both required a browser-window aspect ratio of at least 4:3, so a 1000 x 800
+  fine-pointer window incorrectly became a 1000 x 800 stage with only 432
+  logical units of vertical world. Maximizing the browser crossed the ratio
+  threshold and made the portrait frame appear, which matched the reported
+  behavior.
+- Fine-pointer desktop windows now always use the centered portrait frame. The
+  existing 500 CSS-pixel width cap remains, narrow windows retain 16 px side
+  margins, and short windows continue shrinking the frame from their available
+  height instead of clipping it. Phone/coarse-pointer viewport fill is unchanged.
+- Added a focused first-load and live-resize browser audit at 520 x 720,
+  640 x 720, 900 x 760, 1000 x 800, 1280 x 720, 1366 x 768, and 1440 x 900.
+  The formerly broken 1000 x 800 window now renders at 500 x 768 with 829
+  logical vertical units;
+  all tested stages remain centered, portrait, vertically contained, and free
+  of browser errors through 1000 x 800 -> 1440 x 900 -> 960 x 720 resizing.
+- Build `15.1.1` contains 56 hash-verified files and 35/35 offline assets. The
+  required web-game client, focused source/package/LAN layout audits, complete
+  logic and 1,000-seed route audits, and the full phone/offline/desktop release
+  matrix pass with no browser errors. Phone remains 390 x 844 viewport-fill;
+  the standard 1440 x 900 desktop remains a fixed 500 x 868 frame.
+- The local-only preview now serves the exact `15.1.1` package at
+  `http://192.168.86.20:5197/html-remake/?dev=1&build=15.1.1`. GitHub Pages and
+  Firebase production state were not changed.
+
+## Build 15.1.2 — Full-surface desktop button hit areas
+
+- Hardened every native button after physical desktop review found dead zones
+  over visible button lettering. Button content can no longer become an
+  independent pointer target: all label descendants ignore hit testing, while
+  a transparent full-surface layer owned by the button covers its complete
+  rounded rectangle. Native click and keyboard activation remain in place.
+- Added touch-action and selection guards directly to native buttons so a small
+  mouse/pointer movement over lettering cannot turn an intended activation into
+  text selection or a delayed browser gesture.
+- Added a focused 1000 x 800 real-pointer audit that clicks the exact rendered
+  text center and an edge point across Start, How to Play, menu Leaderboard,
+  sound, DEV, a nested DEV status label, View Leaderboard, Back to Results, and
+  Climb Again. Every hit resolved to the owning button and completed its full
+  menu/game state transition with no browser errors.
+- Build `15.1.2` contains 56 hash-verified files and 35/35 offline assets. The
+  required game client, focused source/package button audit, desktop window
+  matrix, complete logic and 1,000-seed route audits, and full phone/offline/
+  desktop release matrix pass with no browser errors. Button visuals, touch
+  controls, desktop framing, audio, and gameplay remain unchanged.
+- The persistent LAN preview now serves the exact `15.1.2` package at
+  `http://192.168.86.20:5197/html-remake/?dev=1&build=15.1.2`; the same focused
+  text-center/edge audit passes there. GitHub Pages and Firebase production
+  state remain unchanged.
+
+## Build 15.2.0 — Above-route rival pressure
+
+- Cow vs Cat neutral pursuit now targets roughly 100–140 logical pixels above
+  the cow instead of wandering from 97 pixels above to 13 pixels below. The
+  accepted 180–230 pixel horizontal orbit and 80-pixel edge inset are unchanged.
+- Falling 72 pixels behind queues a sticky Moonshot overtake and caps the
+  remaining decision delay at 0.45 seconds. Once queued, ordinary thrust cannot
+  replace the move with a random attack at the last moment.
+- A completed overtake starts a 1.15-second world-height hold. The cow can use
+  that readable opening to chain upward, get above the cat, and set up a
+  counter; after the opening the cat may re-engage with another Moonshot.
+- Long-run deterministic combat measured 68.9% of engaged time above the cow,
+  with Fiddle Drop, Moonshot setup, recoveries, and counters providing the
+  remaining below/level windows. Neutral settled pursuit stays above 90% of
+  the time and its target measured 98.64–141.69 pixels ahead.
+- Bow Swipe now locks the vertical lane promised by its warning. This fixes a
+  regression caught during the wider audit where the new neutral target could
+  pull the cat upward before the horizontal dash.
+- The existing `TEST BOOST` DEV control is now `TEST OVERTAKE` and stages the
+  complete below → positioning → warning → boost past → pressure-above cycle.
+  Runtime state exposes relation, lead, queued status, hold time, occupancy,
+  and overtake count for tuning.
+- Landmark-approach and leaderboard balloon protection, maximum attack
+  collateral, cow score/combo isolation, catch-up, offscreen failsafe, and
+  Firebase isolation are unchanged.
+- Added focused logic and 390 × 844 browser audits. Source, exact 56-file
+  release package, and LAN preview pass the new flow with four inspected
+  captures, zero browser errors, and zero Firebase writes. Phase 13–15.1
+  regressions, the required web-game client, desktop window matrix, exact
+  text-center button audit, full phone/offline/audio/touch/performance release
+  matrix, 56/56 hashes, 35/35 assets, and the 1,000-seed / 1,672,034-balloon
+  route audit all pass.
+- The persistent preview now serves the exact local-only `15.2.0` package at
+  `http://192.168.86.20:5197/html-remake/?dev=1&build=15.2.0`. GitHub Pages and
+  Firebase production state were not changed.
+
+## Build 15.2.1 — Counter rebound and Moonshot sword clank
+
+- Raised a standard successful cat counter from 540 base vertical speed to
+  `690`, exactly 75% of the normal `920` balloon bounce. Counter knockdown,
+  three-hit retreat, score/combo preservation, and altitude speed scaling are
+  unchanged.
+- Added an active-Moonshot sword clank. If the cow's slash intersects the
+  cat's raised weapon as the cat rockets upward, the contact is resolved once,
+  cow damage is prevented, and the cow rebounds at `460`, exactly 50% of a
+  normal balloon bounce. The cat is not knocked down and completes the attack.
+- A Moonshot clank preserves balloon color, streak, score, pop count, and floor
+  state. Missing the timing still produces the established sideways/downward
+  Moonshot hit.
+- Added the independent `rivalClank` audio event using a short, quiet two-tone
+  metal tink with no long ringing tail. The focused unlocked-audio browser
+  audit confirms the event is both requested and scheduled once per clank.
+- Runtime diagnostics expose both rebound ratios, resolved-clank state, and
+  clank count. Phase 14 logic/browser coverage verifies 75%/50% strength,
+  single resolution, preserved combo, continued Moonshot state, missed-clank
+  damage, distinct audio, and zero Firebase writes.
+- Build `15.2.1` contains 56 hash-verified files and 35/35 offline assets. The
+  full logic and 1,000-seed / 1,672,034-balloon route audit, required real-input
+  game client, exact package/LAN clank audit, true offline reload, phone touch
+  and audio, fixed-width desktop controls, and five-altitude performance matrix
+  pass with zero browser errors.
+- The persistent local-only preview now serves the exact package at
+  `http://192.168.86.20:5197/html-remake/?dev=1&build=15.2.1`. GitHub Pages and
+  Firebase production state were not changed.
+
+## Build 16.0.0 — Public Cow vs Cat and separate leaderboards
+
+- Promoted Cow vs Cat to a public `COW VS CAT` main-menu button directly below
+  `OVER THE MOON`. The modes remain one shared game: route, physics, controls,
+  balloons, landmarks, backgrounds, audio, and future common improvements feed
+  both, while rival AI/combat is enabled only in Cow vs Cat.
+- Added `MAIN MENU` to both result flows and post-run leaderboard actions.
+  Results now always offer the correct mode leaderboard and same-mode retry.
+  The menu and post-run leaderboard use two explicit tabs: Over the Moon and
+  Cow vs Cat.
+- Added a compact Cow vs Cat row to How To Play covering dodging, attack
+  openings, and the Moonshot sword clank.
+- Refactored the leaderboard client into two isolated services. Classic keeps
+  its unchanged `/jumpoverthemoon/scores`,
+  `jumpoverthemoon_highscore_cache`, and `over-the-moon.best-height` values.
+  Cow vs Cat uses `/jumpoverthemoon/cowvscat/scores`,
+  `jumpoverthemoon_cowvscat_highscore_cache`, and
+  `over-the-moon.cow-vs-cat.best-height`. Pending/offline queues cannot cross
+  modes; only the player's last initials are shared for convenience.
+- Both modes now create interactive top-ten score balloons from their own
+  leaderboard. They use the four normal balloon colors beneath the gold aura,
+  continue the cow's displayed-color combo, and remain protected from every cat
+  attack.
+- Added `PHASE_16_PUBLIC_COW_VS_CAT.md` with the exact merged Firebase rule set.
+  Read-only live checks returned `200` for the unchanged Classic path and `401`
+  for the new Cat path, confirming production was not mutated and the Cat rule
+  still needs to be published before deployment.
+- Added a deterministic Phase 16 audit proving separate endpoints, caches,
+  local bests, pending queues, in-world markers, post-run submission routing,
+  and Main Menu return. Its mocked Cat submission issued one Cat POST and zero
+  Classic POSTs; no live write was made.
+- The 390 × 844 and 1280 × 720 Phase 16 browser flow passed public menu order,
+  How To Play fit, Cat start/results/submission, tab switching, Main Menu,
+  Classic restart, desktop framing, and four inspected captures with zero
+  browser errors. The full offline/phone/desktop release matrix, seven-window
+  desktop framing audit, full-surface button audit, required web-game client,
+  1,000-seed / 1,672,034-balloon route audit, and all prior combat regressions
+  also pass.
+- Build `16.0.0` contains 56 hash-verified files, 35/35 offline assets, and
+  9,062,495 packaged bytes. The persistent LAN preview serves the exact package
+  at `http://192.168.86.20:5197/html-remake/?dev=1&build=16.0.0`.
+  GitHub Pages and Firebase production state remain unchanged.
+
+## Build 16.0.1 — First-balloon Cat entrance gate
+
+- Cow vs Cat now begins with the rival in an explicit
+  `waiting-first-pop` state. The cat is inactive, invisible, motionless, and
+  cannot attack or pop route balloons while the cow is trying to start the
+  run.
+- The cow's first balloon pop changes the rival to the established opening
+  grace state. Its existing 2.3-second entrance delay now counts from that pop,
+  after which the normal jetpack pursuit begins.
+- Cat-created balloon pops cannot release this gate. Classic remains
+  unchanged, and all DEV force-attack/boost/overtake/drop/counter tools may
+  still bypass the gate for deterministic testing.
+- Added runtime diagnostics for `waitingForFirstCowPop` and a dedicated logic
+  audit. The audit held the unstarted Cat run for 7.3 seconds, verified zero cat
+  pops and preservation of every opening balloon, then verified the post-pop
+  grace and entrance. Full Phase 13–16 combat, route, leaderboard, package,
+  PWA, and Pages audits pass.
+- Phone-browser checks against both source and the exact LAN package passed
+  the waiting and post-pop states with two inspected screenshots and zero
+  browser errors. The required web-game input client also passed.
+- Build `16.0.1` contains 56 hash-verified files, 35/35 offline assets, and
+  9,063,296 packaged bytes. The persistent LAN preview serves the exact local
+  package at
+  `http://192.168.86.20:5197/html-remake/?dev=0&build=16.0.1` (or `dev=1` for
+  testing). GitHub Pages and Firebase production state remain unchanged.
+
+## Moonshot damage diagnosis after build 16.0.1
+
+- Confirmed in the exact LAN build that an unprotected active Moonshot overlap
+  does emit one `rivalBoostHit`, increments `boostCowHits`, changes the cow from
+  upward to downward velocity, and applies horizontal knockback. The timed
+  downward-slash overlap instead emits one `rivalClank`, records zero cow hits,
+  and awards the established upward rebound. No browser errors occurred.
+- The reported feel issue is credible even though the hit path exists. Moonshot
+  currently uses 285 horizontal / 360 downward knockback versus Bow Swipe's
+  430 / 560, and its downward assignment cannot add force when the cow is
+  already falling faster than 360. A follow-up balance fix should make the
+  active boost collision/impact feel as authoritative as the regular swipe
+  while preserving the sword-clank exception.
+
+## Build 16.0.2 — Authoritative Moonshot impact
+
+- Expanded the active Moonshot path from 34 to 42 logical pixels of base
+  half-width and from 74 to 88 pixels of reach above the cat, bringing the
+  collision closer to the visible boost sprite without turning the warning
+  lane into an unavoidable wall.
+- Raised an unprotected Moonshot hit from 285 horizontal / 360 downward base
+  knockback to 430 / 560, matching Bow Swipe's authoritative displacement.
+  If the cow is already falling, the impact now adds another 180 downward
+  speed so the hit cannot disappear inside existing fall velocity.
+- Preserved the only active-boost exception: a correctly timed downward slash
+  still clanks, awards the established 50% balloon rebound, preserves the
+  combo, records zero cow hits, and plays the dedicated soft metal sound.
+- Added logic coverage for a hit near the widened column edge and for an
+  already-falling cow. Added a 390 × 844 browser regression covering a normal
+  rising hit, falling-speed addition, and the no-damage clank. Source and exact
+  LAN package both pass with two inspected captures and zero browser errors.
+- Build `16.0.2` contains 56 hash-verified files, 35/35 offline assets, and
+  9,063,853 packaged bytes. Full Phase 13–16 combat, first-pop entrance,
+  leaderboard, route, PWA, Pages, and required-client audits pass. The
+  persistent local preview serves
+  `http://192.168.86.20:5197/html-remake/?dev=0&build=16.0.2` (or `dev=1` for
+  testing). GitHub Pages and Firebase production state were not changed.
+
+## Build 16.0.2 — Production promotion
+
+- Promoted the Phase 16 Cow vs Cat work and authoritative Moonshot impact as
+  the production GitHub Pages package in `docs/`.
+- The final exact-package browser pass covered the public menu, both game
+  modes, isolated Classic and Cow vs Cat leaderboard flows, phone and desktop
+  layouts, touch and keyboard controls, audio unlock, and offline service
+  worker behavior with zero browser errors.
+- The live Firebase database accepts reads at both the established Classic
+  score path and the new Cow vs Cat score path. No synthetic production score
+  was written during release testing.
+- Release contents were limited to shipping source, final rival sprite frames,
+  phase documentation, deterministic audit scripts, and the generated Pages
+  package. Local screenshots and unused ImageGen working files remain ignored.

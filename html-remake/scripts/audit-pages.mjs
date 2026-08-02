@@ -73,7 +73,12 @@ assert(
 );
 assert(
   leaderboardSource.includes(
-    'const SCORES_PATH = "/jumpoverthemoon/scores"',
+    'scoresPath: "/jumpoverthemoon/scores"',
+  ),
+);
+assert(
+  leaderboardSource.includes(
+    'scoresPath: "/jumpoverthemoon/cowvscat/scores"',
   ),
 );
 

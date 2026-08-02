@@ -1,15 +1,15 @@
 {
   "name": "Over the Moon",
-  "version": "10.3.1",
-  "phase": 10,
+  "version": "16.0.2",
+  "phase": 16,
   "channel": "production",
   "hosting": "github-pages",
   "publicUrl": "https://geoduckedup.github.io/JumpOvertheMoon/",
   "entry": "./",
-  "generatedAt": "2026-07-30T15:37:28.835Z",
-  "fileCount": 46,
-  "totalBytes": 6485459,
-  "gameAssetCount": 25,
+  "generatedAt": "2026-08-02T16:29:20.565Z",
+  "fileCount": 56,
+  "totalBytes": 9062942,
+  "gameAssetCount": 35,
   "files": [
     {
       "path": ".nojekyll",
@@ -19,7 +19,7 @@
     {
       "path": ".over-the-moon-pages",
       "bytes": 7,
-      "sha256": "19451a30d960cac8076e19edb9180b007babf3808256a48eb3975429ff6d3c49"
+      "sha256": "30ecd13e928ce5c8656a404bca5f15f61bc056cb9f8116504deb148dc046fd9f"
     },
     {
       "path": "assets/audio/balloon-pop-cc0.wav",
@@ -147,14 +147,64 @@
       "sha256": "e51d5009d8411c5e1fe1976d363bbd3de75c813be69e9b4d6681c55ccefe4cd9"
     },
     {
+      "path": "assets/game/rival_cat_jetpack_boost_active_v2.png",
+      "bytes": 105422,
+      "sha256": "fdd44a28ead3c7691bbc4616346d878afe2e7a53bf73bb968578422126577ffa"
+    },
+    {
+      "path": "assets/game/rival_cat_jetpack_boost_charge_v2.png",
+      "bytes": 140523,
+      "sha256": "3643b7354136f785acc20169347335b16b1d3b80e477c4e6db096c6e73d2cbed"
+    },
+    {
+      "path": "assets/game/rival_cat_jetpack_bow_slash_v2.png",
+      "bytes": 251286,
+      "sha256": "4232b962fc09d2c92f6e749405c8761acdb7fc1cd613b1d1f092b59b97b86807"
+    },
+    {
+      "path": "assets/game/rival_cat_jetpack_bow_windup_v2.png",
+      "bytes": 279210,
+      "sha256": "332c46dbe84f29b5882f3712f4eb3e63be7fe9eb4900ba284d77b5ddf5bef6a5"
+    },
+    {
+      "path": "assets/game/rival_cat_jetpack_concerto_v2.png",
+      "bytes": 310888,
+      "sha256": "793be2177eaf5c589f0583166cb186a918d2014d39bc217930dacafe7aba8231"
+    },
+    {
+      "path": "assets/game/rival_cat_jetpack_fiddle_drop_active_v1.png",
+      "bytes": 242116,
+      "sha256": "38c2a85df02bfeca3a6b35fce8cf4212956313dc22fc32a6c48eec9468436021"
+    },
+    {
+      "path": "assets/game/rival_cat_jetpack_fiddle_drop_windup_v1.png",
+      "bytes": 250116,
+      "sha256": "5ffd0e68103aa780a2fb439301a74bf36960bd7dfcecea8401e32464fe20ff79"
+    },
+    {
+      "path": "assets/game/rival_cat_jetpack_fiddle_heavy_v2.png",
+      "bytes": 282331,
+      "sha256": "e4e628726a758552f1c899d63a71087623fa7c2db15935641069676c85829e0f"
+    },
+    {
+      "path": "assets/game/rival_cat_jetpack_hover_v2.png",
+      "bytes": 297138,
+      "sha256": "eccb321c1aaccb7d40a2757f087680d21c2eeb6228f3312f8fb77fd1cad54149"
+    },
+    {
+      "path": "assets/game/rival_cat_jetpack_knockdown_v2.png",
+      "bytes": 294757,
+      "sha256": "610f07eee6a4d865b548bcd1b49375932f5c6daa8d0a854353c5b264affc286f"
+    },
+    {
       "path": "assets/game/splash_over_the_moon.png",
       "bytes": 2929053,
       "sha256": "061a2fc8b7ee030e063e001f95815b4e4c30f1ad4a88c7824f6f312a95fe79b8"
     },
     {
       "path": "index.html",
-      "bytes": 11939,
-      "sha256": "f7edeca4d167d42d451bbbb1bc21cd312eae042bea52074a7a460005881a6479"
+      "bytes": 14717,
+      "sha256": "8fd4c77319046debf0cfc6387b2ba546f019345ea66a71a41cd7bffc09d3bff5"
     },
     {
       "path": "manifest.webmanifest",
@@ -163,8 +213,8 @@
     },
     {
       "path": "service-worker.js",
-      "bytes": 3005,
-      "sha256": "480b2f3a5850bce5467f6b3f46086f4eaaac4cd57e64569f071bc0655ad85b83"
+      "bytes": 3568,
+      "sha256": "81bcdd7615fd70364fbc3dc58c3139d0e12cc2e11c5736e7c3bf26b30b5fce84"
     },
     {
       "path": "src/assets.js",
@@ -173,23 +223,23 @@
     },
     {
       "path": "src/audio.js",
-      "bytes": 22930,
-      "sha256": "28c58c3eacf16f03bd4c80eca827ba669a681200fe8972f3150ac28d57a528b7"
+      "bytes": 25445,
+      "sha256": "d12be7656577b5186f395665074ad1a9b779d16896e792b45957ff0b20caf597"
     },
     {
       "path": "src/config.js",
-      "bytes": 3746,
-      "sha256": "66a13ea426fbb766bd5044fc9f0c68bed782ad48ec741f58d8fdd1cb955c1baf"
+      "bytes": 4992,
+      "sha256": "f44788c007649f375dc633d7fbfad7cc73b0ba753022d5fdefced325da10002d"
     },
     {
       "path": "src/game-config.js",
-      "bytes": 10239,
-      "sha256": "283d78525559cfbafdd6225c4b8b0ca7c027b52798df3e4a595f213dfc48ebc2"
+      "bytes": 15100,
+      "sha256": "6f33f4aecab6c82a2382ad89c81761ecc0fddbf1dd09b01a77e7be6c98fce2f3"
     },
     {
       "path": "src/game.js",
-      "bytes": 58895,
-      "sha256": "af5beb2233cc1884b39fdd638223c4b230cbf6d132f44c00753d68dd36c36b7f"
+      "bytes": 139122,
+      "sha256": "8419313ba9c918ec41f3d0872cb7ae0058c3cc1f07650ef3afb3e0bef6107e03"
     },
     {
       "path": "src/input.js",
@@ -198,18 +248,18 @@
     },
     {
       "path": "src/layout.js",
-      "bytes": 5510,
-      "sha256": "9afbebdf5349e8610cf478f5cb7fc0254a973fdc62124c2c0b316e80accc446d"
+      "bytes": 5419,
+      "sha256": "c4fde1e56cfd090ddefd17a381016a3966ca005cc3b60b020cc8e7727fff0c7b"
     },
     {
       "path": "src/leaderboard.js",
-      "bytes": 7480,
-      "sha256": "51ebfa21cf205c2389c2534b5a804be3e57db0ae6619a58ade901298170f1702"
+      "bytes": 8841,
+      "sha256": "2108f4718430664545fc86069b9d5e6ddacebbdcd7d46cf726689c084e431632"
     },
     {
       "path": "src/main.js",
-      "bytes": 46062,
-      "sha256": "616c27a63304bd73ce155d7a19475569ce61f0bf2a99d8d3e22e55ab4a0dd5e8"
+      "bytes": 61464,
+      "sha256": "fbcb8ed67f00555416bc5ce07bf6cc8a0c970fca6d4798c6c5a741d255a602db"
     },
     {
       "path": "src/name-entry.js",
@@ -223,13 +273,13 @@
     },
     {
       "path": "src/renderer.js",
-      "bytes": 64235,
-      "sha256": "d1ebb8e216523e5e81dc382e861f135e77a0bb0321c346f74ee73fc394c5e942"
+      "bytes": 74846,
+      "sha256": "1f9130bc97fb0b788c1429edb2a7c38cc1321a1c9fe3079ff2a06cd88f44ac07"
     },
     {
       "path": "src/route.js",
       "bytes": 5759,
-      "sha256": "a69225c1c785d1306796e1bb14a7e829c2c798ff44323d51b05ffa972227ef77"
+      "sha256": "3821e37fcdf628f309e5f51bfd9d251fc60ce7a0afc0ce50f4d4daff3aa313e8"
     },
     {
       "path": "src/runtime.js",
@@ -238,8 +288,8 @@
     },
     {
       "path": "styles.css",
-      "bytes": 27421,
-      "sha256": "45820328e47ebf48558cfd33996d0cb70c7ac1c6fdfa7711462a833b68b768cc"
+      "bytes": 31644,
+      "sha256": "97fc3ff8fd6353b8b1f2308b96a07136526b1b4ce3baf8e1d8038d8dc2e426d0"
     }
   ]
 }

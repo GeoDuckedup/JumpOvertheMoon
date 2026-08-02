@@ -26,6 +26,11 @@ historical behavior and shared-art reference.
   `10.3.1` shipping build with four-color, gold-aura leaderboard balloons,
   the desktop fullscreen button removed, and slightly elevated centered
   camera framing
+- Phases 11–15: complete — Cow vs Cat foundation, jetpack pursuit, Bow Swipe,
+  Moonshot/clank, Fiddle Drop, offscreen recovery, and above-route pressure
+- Phase 16: complete — public Cow vs Cat menu entry, Main Menu navigation,
+  separate Classic/Cow vs Cat leaderboards and offline queues, and mode-specific
+  interactive gold-aura score balloons
 
 ## GitHub Pages shipping build
 
@@ -40,7 +45,10 @@ npm run ship:pages
 The command rebuilds the protected release package, adapts asset, manifest, and
 service-worker paths for the Pages root, replaces only a recognized legacy or
 marked `docs/` target, and verifies every generated file hash. It preserves the
-existing Firebase project and `/jumpoverthemoon/scores` leaderboard path.
+existing Firebase project and `/jumpoverthemoon/scores` Classic leaderboard
+path. Phase 16 adds Cow vs Cat at `/jumpoverthemoon/cowvscat/scores`; publish
+the scoped rule addition in `PHASE_16_PUBLIC_COW_VS_CAT.md` before deploying
+the public build.
 
 ## Non-negotiable rebuild requirements
 
@@ -85,6 +93,10 @@ existing Firebase project and `/jumpoverthemoon/scores` leaderboard path.
   polish, verification, and phone checklist.
 - `PHASE_10_RELEASE_CANDIDATE.md`: release identity, full-climb balance
   evidence, offline/package design, verification, and final device checklist.
+- `PHASE_11_COW_VS_CAT_FOUNDATION.md` through the Phase 15 notes: rival-mode
+  movement, combat, art, balance, and regression evidence.
+- `PHASE_16_PUBLIC_COW_VS_CAT.md`: public mode flow, strict score isolation,
+  Firebase rule merge, score-balloon behavior, and deployment checklist.
 
 ## Build the production release
 

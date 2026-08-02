@@ -301,7 +301,55 @@ export class GameAudio {
       case "slash":
         this.#swordSwish(now);
         break;
+      case "rivalSwipeTelegraph":
+        this.#tone(now, 0.11, 540, 690, "triangle", 0.055);
+        this.#tone(now + 0.13, 0.12, 610, 790, "sine", 0.045);
+        break;
+      case "rivalSwipe":
+        this.#swordSwish(now);
+        break;
+      case "rivalBoostTelegraph":
+        this.#tone(now, 0.16, 190, 330, "triangle", 0.055);
+        this.#tone(now + 0.13, 0.2, 280, 540, "sine", 0.045);
+        break;
+      case "rivalBoost":
+        this.#tone(now, 0.22, 160, 690, "sawtooth", 0.075);
+        this.#swordSwish(now + 0.025);
+        break;
+      case "rivalBoostHit":
+        this.#tone(now, 0.14, 180, 82, "triangle", 0.12);
+        this.#tone(now + 0.03, 0.11, 350, 145, "sine", 0.06);
+        break;
+      case "rivalClank":
+        this.#tone(now, 0.065, 520, 390, "triangle", 0.05);
+        this.#tone(now + 0.008, 0.045, 780, 560, "sine", 0.025);
+        break;
+      case "rivalFiddleTelegraph":
+        this.#tone(now, 0.16, 330, 225, "triangle", 0.06);
+        this.#tone(now + 0.16, 0.18, 270, 185, "sine", 0.05);
+        break;
+      case "rivalFiddleDrop":
+        this.#tone(now, 0.24, 270, 82, "sawtooth", 0.07);
+        this.#swordSwish(now + 0.035);
+        break;
+      case "rivalFiddleHit":
+        this.#tone(now, 0.16, 145, 62, "triangle", 0.13);
+        this.#tone(now + 0.025, 0.12, 250, 96, "sine", 0.065);
+        break;
+      case "rivalHit":
+        this.#tone(now, 0.13, 155, 74, "triangle", 0.12);
+        this.#tone(now + 0.025, 0.09, 290, 118, "sine", 0.055);
+        break;
+      case "rivalCounter":
+        this.#tone(now, 0.12, 310, 620, "triangle", 0.08);
+        this.#tone(now + 0.045, 0.13, 520, 880, "sine", 0.055);
+        break;
+      case "rivalRetreat":
+        this.#tone(now, 0.11, 410, 220, "triangle", 0.07);
+        this.#tone(now + 0.09, 0.16, 270, 105, "sine", 0.06);
+        break;
       case "balloonPop":
+      case "rivalBalloonPop":
         this.#mouthBalloonPop(now);
         break;
       case "bounce":
@@ -357,6 +405,18 @@ export class GameAudio {
       independentBuses: ["effects", "ambience"],
       soundDesign: {
         slash: "filtered-noise-swish-v2",
+        rivalSwipeTelegraph: "soft-two-note-warning-v1",
+        rivalSwipe: "filtered-noise-swish-v2",
+        rivalBoostTelegraph: "two-stage-rising-engine-warning-v1",
+        rivalBoost: "rising-jet-and-bow-swish-v1",
+        rivalBoostHit: "short-vertical-impact-v1",
+        rivalClank: "short-soft-metal-tink-v1",
+        rivalFiddleTelegraph: "two-note-low-string-warning-v1",
+        rivalFiddleDrop: "descending-fiddle-rush-v1",
+        rivalFiddleHit: "short-heavy-fiddle-impact-v1",
+        rivalHit: "short-low-impact-v1",
+        rivalCounter: "short-rising-counter-v1",
+        rivalRetreat: "short-descending-retreat-v1",
         balloonPop: "quiet-mouth-pop-v5",
         gameOver: "soft-descending-two-tone-v1",
         retry: "short-rising-two-tone-v1",

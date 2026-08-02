@@ -19,7 +19,7 @@
     <link rel="icon" type="image/png" href="../cat-sword-climb/assets/cat_idle.png">
     <link rel="apple-touch-icon" href="../cat-sword-climb/assets/cat_idle.png">
     <link rel="manifest" href="./manifest.webmanifest">
-    <link rel="stylesheet" href="./styles.css?v=10.3.1">
+    <link rel="stylesheet" href="./styles.css?v=16.0.2">
   </head>
   <body>
     <div id="viewport-root">
@@ -62,6 +62,14 @@
           <div class="start-card">
             <button id="start-button" type="button" disabled>
               LOADING…
+            </button>
+            <button
+              id="cow-vs-cat-button"
+              class="start-rival"
+              type="button"
+              disabled
+            >
+              COW VS CAT
             </button>
             <div class="start-menu-actions" aria-label="Main menu">
               <button
@@ -124,6 +132,7 @@
         <div id="death-actions" hidden aria-label="Run results actions">
           <button id="death-primary" type="button">VIEW LEADERBOARD</button>
           <button id="death-retry" type="button">CLIMB AGAIN</button>
+          <button id="death-menu" type="button">MAIN MENU</button>
         </div>
 
         <section
@@ -138,6 +147,25 @@
                 THIS RUN <strong id="leaderboard-run-score">0 m</strong>
               </p>
             </header>
+
+            <div id="leaderboard-tabs" role="tablist" aria-label="Game mode">
+              <button
+                id="leaderboard-tab-classic"
+                type="button"
+                role="tab"
+                aria-selected="true"
+              >
+                OVER THE MOON
+              </button>
+              <button
+                id="leaderboard-tab-rival"
+                type="button"
+                role="tab"
+                aria-selected="false"
+              >
+                COW VS CAT
+              </button>
+            </div>
 
             <form id="leaderboard-entry" autocomplete="off">
               <label for="leaderboard-initials">Initials</label>
@@ -182,6 +210,9 @@
               <button id="leaderboard-retry" type="button">
                 RUN AGAIN
               </button>
+              <button id="leaderboard-menu" type="button">
+                MAIN MENU
+              </button>
             </div>
           </div>
         </section>
@@ -215,6 +246,13 @@
                 <div>
                   <strong>MOVE</strong>
                   <p>Hold or slide between the arrows. Use Left and Right on a keyboard.</p>
+                </div>
+              </div>
+              <div class="how-to-play-row rival-help-row">
+                <div class="how-to-play-icon action-icon" aria-hidden="true">VS</div>
+                <div>
+                  <strong>COW VS CAT</strong>
+                  <p>Dodge the cat, slash during openings, and clank its upward sword attack.</p>
                 </div>
               </div>
               <div class="how-to-play-row">
@@ -283,6 +321,44 @@
               <span>1× SPEED LOCK</span>
               <strong id="dev-speed-status">OFF · NORMAL RAMP</strong>
             </button>
+            <p class="dev-mode-label">COW VS CAT · PHASE 16</p>
+            <div class="dev-mode-actions">
+              <button id="dev-start-classic" type="button">
+                CLASSIC TEST
+              </button>
+              <button id="dev-start-rival" type="button">
+                COW VS CAT
+              </button>
+            </div>
+            <div class="dev-rival-actions">
+              <button id="dev-rival-left" type="button">CAT ◀</button>
+              <button id="dev-rival-right" type="button">CAT ▶</button>
+            </div>
+            <div class="dev-rival-chase-actions">
+              <button id="dev-rival-toggle" type="button">
+                RELEASE CAT
+              </button>
+              <button id="dev-rival-speed" type="button">
+                CHASE 1.00×
+              </button>
+            </div>
+            <div class="dev-rival-combat-actions">
+              <button id="dev-rival-attack" type="button">
+                TEST BOW SWIPE
+              </button>
+              <button id="dev-rival-boost" type="button">
+                TEST OVERTAKE
+              </button>
+            </div>
+            <button id="dev-rival-dive" type="button">
+              TEST FIDDLE DROP
+            </button>
+            <button id="dev-rival-counter" type="button">
+              TEST COUNTER BOUNCE
+            </button>
+            <p id="dev-rival-status">
+              ABOVE PRESSURE · SWIPE · OVERTAKE · FIDDLE DROP
+            </p>
             <p class="dev-flyby-label">AMBIENT FLYBYS</p>
             <div class="dev-flyby-actions">
               <button id="dev-test-bird" type="button">
@@ -341,6 +417,6 @@
       </main>
     </div>
 
-    <script type="module" src="./src/main.js?v=10.3.1"></script>
+    <script type="module" src="./src/main.js?v=16.0.2"></script>
   </body>
 </html>

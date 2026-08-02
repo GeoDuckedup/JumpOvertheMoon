@@ -1,13 +1,25 @@
 import {
   BLOCKED_INITIALS,
   sanitizeInitials,
-} from "./name-entry.js?v=10.3.1";
+} from "./name-entry.js?v=16.0.2";
 
 const DATABASE_URL =
   "https://over-the-moon-14b50-default-rtdb.firebaseio.com";
-const SCORES_PATH = "/jumpoverthemoon/scores";
-const CACHE_KEY = "jumpoverthemoon_highscore_cache";
-const LEGACY_BEST_KEY = "over-the-moon.best-height";
+const PLAYER_INITIALS_KEY = "over-the-moon.player-initials";
+export const LEADERBOARD_MODES = Object.freeze({
+  classic: Object.freeze({
+    playMode: "classic",
+    scoresPath: "/jumpoverthemoon/scores",
+    cacheKey: "jumpoverthemoon_highscore_cache",
+    localBestKey: "over-the-moon.best-height",
+  }),
+  "cow-vs-cat": Object.freeze({
+    playMode: "cow-vs-cat",
+    scoresPath: "/jumpoverthemoon/cowvscat/scores",
+    cacheKey: "jumpoverthemoon_cowvscat_highscore_cache",
+    localBestKey: "over-the-moon.cow-vs-cat.best-height",
+  }),
+});
 const LEADERBOARD_SIZE = 10;
 const REFRESH_INTERVAL_MS = 30_000;
 const FETCH_TIMEOUT_MS = 8_000;
@@ -59,39 +71,67 @@ export const normalizeLeaderboardEntries = (payload) => {
   return sortEntries(normalized);
 };
 
-const loadCache = () => {
+const loadCache = (cacheKey) => {
   try {
-    const parsed = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
+    const parsed = JSON.parse(localStorage.getItem(cacheKey) || "{}");
     return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
     return {};
   }
 };
 
-const readLegacyBest = () => {
+const readLocalBest = (localBestKey) => {
   try {
-    return clampScore(localStorage.getItem(LEGACY_BEST_KEY));
+    return clampScore(localStorage.getItem(localBestKey));
   } catch {
     return 0;
   }
 };
 
-const leaderboardUrl = () => {
+const readSharedInitials = () => {
+  try {
+    return sanitizeInitials(localStorage.getItem(PLAYER_INITIALS_KEY));
+  } catch {
+    return "AAA";
+  }
+};
+
+const leaderboardUrl = (databaseUrl, scoresPath) => {
   const query = new URLSearchParams({
     orderBy: JSON.stringify("score"),
     limitToLast: String(LEADERBOARD_SIZE),
   });
-  return `${DATABASE_URL}${SCORES_PATH}.json?${query}`;
+  return `${databaseUrl}${scoresPath}.json?${query}`;
 };
 
-const submitUrl = () => `${DATABASE_URL}${SCORES_PATH}.json`;
+const submitUrl = (databaseUrl, scoresPath) =>
+  `${databaseUrl}${scoresPath}.json`;
 
 export class LeaderboardService {
-  constructor({ onChange } = {}) {
-    const cached = loadCache();
+  constructor({
+    onChange,
+    playMode = "classic",
+    databaseUrl = DATABASE_URL,
+    scoresPath,
+    cacheKey,
+    localBestKey,
+  } = {}) {
+    const modeConfig =
+      LEADERBOARD_MODES[playMode] || LEADERBOARD_MODES.classic;
+    this.playMode = modeConfig.playMode;
+    this.databaseUrl = databaseUrl;
+    this.scoresPath = scoresPath || modeConfig.scoresPath;
+    this.cacheKey = cacheKey || modeConfig.cacheKey;
+    this.localBestKey = localBestKey || modeConfig.localBestKey;
+    const cached = loadCache(this.cacheKey);
     this.onChange = onChange;
-    this.localBest = Math.max(clampScore(cached.best), readLegacyBest());
-    this.localInitials = sanitizeInitials(cached.initials);
+    this.localBest = Math.max(
+      clampScore(cached.best),
+      readLocalBest(this.localBestKey),
+    );
+    this.localInitials = sanitizeInitials(
+      cached.initials || readSharedInitials(),
+    );
     this.topScores = normalizeLeaderboardEntries(cached.top_scores);
     this.pending = Array.isArray(cached.pending)
       ? cached.pending
@@ -136,7 +176,9 @@ export class LeaderboardService {
     this.status = "loading";
     this.error = null;
     this.#notify();
-    this.refreshPromise = this.#request(leaderboardUrl())
+    this.refreshPromise = this.#request(
+      leaderboardUrl(this.databaseUrl, this.scoresPath),
+    )
       .then((payload) => {
         this.topScores = normalizeLeaderboardEntries(payload);
         this.status = "ready";
@@ -170,8 +212,8 @@ export class LeaderboardService {
     }
     if (entry.score > this.localBest) {
       this.localBest = entry.score;
-      this.localInitials = entry.initials;
     }
+    this.localInitials = entry.initials;
     this.pending.push(entry);
     this.pending = this.pending.slice(-20);
     this.topScores = normalizeLeaderboardEntries([
@@ -196,6 +238,8 @@ export class LeaderboardService {
   getSnapshot() {
     return {
       implemented: true,
+      playMode: this.playMode,
+      scoresPath: this.scoresPath,
       status: this.status,
       localBest: this.localBest,
       localInitials: this.localInitials,
@@ -212,7 +256,7 @@ export class LeaderboardService {
       this.error = null;
       this.#notify();
       try {
-        await this.#request(submitUrl(), {
+        await this.#request(submitUrl(this.databaseUrl, this.scoresPath), {
           method: "POST",
           headers: {
             Accept: "application/json",
@@ -265,8 +309,9 @@ export class LeaderboardService {
       pending: this.pending.slice(-20),
     };
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
-      localStorage.setItem(LEGACY_BEST_KEY, String(this.localBest));
+      localStorage.setItem(this.cacheKey, JSON.stringify(payload));
+      localStorage.setItem(this.localBestKey, String(this.localBest));
+      localStorage.setItem(PLAYER_INITIALS_KEY, this.localInitials);
     } catch {
       // Private browsing may block storage; the current run still works.
     }

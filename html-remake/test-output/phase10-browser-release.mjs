@@ -40,9 +40,9 @@ const waitForReady = (page) =>
   page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || "{}");
     return (
-      state.phase === 10 &&
-      state.release?.version === "10.3.1" &&
-      state.assets?.loaded === 25 &&
+      state.phase === 16 &&
+      state.release?.version === "16.0.2" &&
+      state.assets?.loaded === 35 &&
       state.assets?.loaded === state.assets?.total &&
       state.assets?.failures?.length === 0
     );
@@ -210,7 +210,7 @@ try {
   offlineState = await stateOf(phonePage);
   assert(
     offlineState.release.pwa.controlled &&
-      offlineState.assets.loaded === 25 &&
+      offlineState.assets.loaded === 35 &&
       offlineState.assets.failures.length === 0,
     "The installed release must reload all game assets while offline.",
   );
@@ -395,8 +395,8 @@ try {
     "The packaged desktop release must stay in its fixed-width frame.",
   );
   assert(
-    desktopState.release.version === "10.3.1" &&
-      desktopState.assets.loaded === 25 &&
+    desktopState.release.version === "16.0.2" &&
+      desktopState.assets.loaded === 35 &&
       !desktopState.devTools.enabled,
     "The packaged release must contain the complete public build.",
   );

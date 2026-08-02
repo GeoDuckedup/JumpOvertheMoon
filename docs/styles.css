@@ -44,8 +44,24 @@ body {
 }
 
 button {
+  position: relative;
   font: inherit;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
   -webkit-user-drag: none;
+}
+
+button::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  border-radius: inherit;
+}
+
+button > * {
+  pointer-events: none;
 }
 
 #viewport-root {
@@ -136,6 +152,7 @@ button {
 #sound-button:focus-visible,
 #dev-button:focus-visible,
 #start-button:focus-visible,
+#cow-vs-cat-button:focus-visible,
 #how-to-play-button:focus-visible,
 #menu-leaderboard-button:focus-visible,
 #touch-controls button:focus-visible {
@@ -218,15 +235,35 @@ button {
 }
 
 #start-button:active:not(:disabled),
+.start-rival:active:not(:disabled),
 .start-secondary:active:not(:disabled) {
   transform: translateY(1px);
   filter: brightness(0.94);
 }
 
 #start-button:disabled,
+.start-rival:disabled,
 .start-secondary:disabled {
   opacity: 0.56;
   cursor: wait;
+}
+
+.start-rival {
+  width: 100%;
+  min-height: 56px;
+  margin-top: 10px;
+  padding: 0 16px;
+  border: 1px solid rgb(154 223 255 / 72%);
+  border-radius: 17px;
+  background: linear-gradient(180deg, rgb(20 46 70 / 96%), rgb(7 19 34 / 96%));
+  color: #dff3ff;
+  box-shadow:
+    0 9px 25px rgb(0 0 0 / 34%),
+    inset 0 1px rgb(255 255 255 / 10%);
+  font-size: clamp(15px, 4.2vw, 19px);
+  font-weight: 950;
+  letter-spacing: 0.085em;
+  cursor: pointer;
 }
 
 .start-menu-actions {
@@ -671,6 +708,16 @@ body[data-coarse="false"] #touch-controls {
 }
 
 .dev-step-actions button,
+#dev-start-classic,
+#dev-start-rival,
+#dev-rival-left,
+#dev-rival-right,
+#dev-rival-toggle,
+#dev-rival-speed,
+#dev-rival-attack,
+#dev-rival-boost,
+#dev-rival-dive,
+#dev-rival-counter,
 #dev-test-bird,
 #dev-test-saucer,
 #dev-test-gold,
@@ -688,6 +735,77 @@ body[data-coarse="false"] #touch-controls {
   letter-spacing: 0.055em;
   touch-action: manipulation;
   cursor: pointer;
+}
+
+.dev-mode-label {
+  margin: 13px 0 7px;
+  color: #ffe180;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+}
+
+.dev-mode-actions,
+.dev-rival-actions,
+.dev-rival-chase-actions,
+.dev-rival-combat-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+#dev-start-rival {
+  border-color: #ffe180;
+  background: linear-gradient(180deg, #ffe991, #f4bf4b);
+  color: #121321;
+}
+
+.dev-rival-actions {
+  margin-top: 9px;
+}
+
+.dev-rival-chase-actions {
+  margin-top: 9px;
+}
+
+#dev-rival-toggle[aria-pressed="true"] {
+  border-color: #ffe180;
+  background: rgb(73 55 20 / 96%);
+  color: #ffe180;
+}
+
+#dev-rival-attack,
+#dev-rival-boost,
+#dev-rival-dive,
+#dev-rival-counter {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 9px;
+  border-color: rgb(255 225 128 / 70%);
+  color: #ffe180;
+}
+
+.dev-rival-combat-actions {
+  margin-top: 0;
+}
+
+#dev-rival-counter {
+  border-color: rgb(134 221 255 / 70%);
+  color: #9adfff;
+}
+
+#dev-rival-dive {
+  border-color: rgb(255 190 112 / 78%);
+  color: #ffc47b;
+}
+
+#dev-rival-status {
+  margin: 7px 2px 0;
+  color: #9adfff;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1.25;
+  letter-spacing: 0.045em;
 }
 
 #dev-speed-toggle {
@@ -757,6 +875,16 @@ body[data-coarse="false"] #touch-controls {
 }
 
 .dev-step-actions button:active,
+#dev-start-classic:active,
+#dev-start-rival:active,
+#dev-rival-left:active,
+#dev-rival-right:active,
+#dev-rival-toggle:active,
+#dev-rival-speed:active,
+#dev-rival-attack:active,
+#dev-rival-boost:active,
+#dev-rival-dive:active,
+#dev-rival-counter:active,
 #dev-test-bird:active,
 #dev-test-saucer:active,
 #dev-test-gold:active,
@@ -767,6 +895,16 @@ body[data-coarse="false"] #touch-controls {
 }
 
 .dev-step-actions button:disabled,
+#dev-start-classic:disabled,
+#dev-start-rival:disabled,
+#dev-rival-left:disabled,
+#dev-rival-right:disabled,
+#dev-rival-toggle:disabled,
+#dev-rival-speed:disabled,
+#dev-rival-attack:disabled,
+#dev-rival-boost:disabled,
+#dev-rival-dive:disabled,
+#dev-rival-counter:disabled,
 #dev-test-bird:disabled,
 #dev-test-saucer:disabled,
 #dev-test-gold:disabled,
@@ -778,6 +916,16 @@ body[data-coarse="false"] #touch-controls {
 #dev-close:focus-visible,
 #dev-landmark-select:focus-visible,
 .dev-step-actions button:focus-visible,
+#dev-start-classic:focus-visible,
+#dev-start-rival:focus-visible,
+#dev-rival-left:focus-visible,
+#dev-rival-right:focus-visible,
+#dev-rival-toggle:focus-visible,
+#dev-rival-speed:focus-visible,
+#dev-rival-attack:focus-visible,
+#dev-rival-boost:focus-visible,
+#dev-rival-dive:focus-visible,
+#dev-rival-counter:focus-visible,
 #dev-test-bird:focus-visible,
 #dev-test-saucer:focus-visible,
 #dev-test-gold:focus-visible,
@@ -834,6 +982,39 @@ body[data-coarse="false"] #touch-controls {
 
 .leaderboard-heading strong {
   font: inherit;
+}
+
+#leaderboard-tabs {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: 0 0 10px;
+}
+
+#leaderboard-tabs button {
+  min-height: 38px;
+  padding: 0 8px;
+  border: 1px solid rgb(154 223 255 / 34%);
+  border-radius: 10px;
+  background: rgb(14 28 48 / 86%);
+  color: rgb(223 243 255 / 68%);
+  font-size: clamp(9px, 2.8vw, 12px);
+  font-weight: 950;
+  letter-spacing: 0.065em;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+#leaderboard-tabs button[aria-selected="true"] {
+  border-color: #ffe180;
+  background: rgb(255 225 128 / 13%);
+  color: #ffe180;
+}
+
+#leaderboard-tabs button:focus-visible {
+  outline: 3px solid #9adfff;
+  outline-offset: 2px;
 }
 
 #leaderboard-entry {
@@ -1008,7 +1189,7 @@ body[data-coarse="false"] #touch-controls {
 #leaderboard-actions {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-top: 10px;
 }
@@ -1021,6 +1202,10 @@ body[data-coarse="false"] #touch-controls {
   border-color: #9adfff;
   background: #9adfff;
   color: #07101d;
+}
+
+#leaderboard-actions:not([data-menu="true"]) #leaderboard-back {
+  grid-column: 1 / -1;
 }
 
 #leaderboard-actions button {
@@ -1044,6 +1229,11 @@ body[data-coarse="false"] #touch-controls {
   color: #07101d !important;
 }
 
+#leaderboard-menu {
+  border-color: rgb(255 225 128 / 56%) !important;
+  color: #ffe180 !important;
+}
+
 #leaderboard-actions button:active {
   transform: translateY(1px);
   filter: brightness(0.92);
@@ -1063,7 +1253,7 @@ body[data-coarse="false"] #touch-controls {
   bottom: max(24px, calc(var(--safe-bottom) + 18px));
   width: min(440px, calc(100% - 32px));
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   transform: translateX(-50%);
   pointer-events: auto;
@@ -1089,9 +1279,15 @@ body[data-coarse="false"] #touch-controls {
 }
 
 #death-actions[data-view="summary"] #death-primary {
+  grid-column: 1 / -1;
   background: #9adfff !important;
   color: #07101d !important;
   border-color: #9adfff !important;
+}
+
+#death-menu {
+  border-color: rgb(255 225 128 / 56%) !important;
+  color: #ffe180 !important;
 }
 
 #death-actions button:active {
@@ -1130,6 +1326,16 @@ body[data-coarse="false"] #touch-controls {
 #game-stage[data-keyboard-open="true"] .leaderboard-heading p {
   margin: 3px 0 7px;
   font-size: 12px;
+}
+
+#game-stage[data-keyboard-open="true"] #leaderboard-tabs {
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+#game-stage[data-keyboard-open="true"] #leaderboard-tabs button {
+  min-height: 31px;
+  font-size: 9px;
 }
 
 #game-stage[data-keyboard-open="true"] #leaderboard-initials,
@@ -1360,9 +1566,10 @@ body[data-coarse="false"] #touch-controls {
   }
 }
 
-@media (min-width: 700px) and (min-aspect-ratio: 4 / 3) and (pointer: fine) {
+@media (pointer: fine) {
   #game-stage {
     width: min(var(--desktop-width), var(--desktop-fit-width));
+    max-width: calc(100dvw - var(--desktop-margin) - var(--desktop-margin));
     height: calc(var(--app-height) - (var(--desktop-margin) * 2));
     max-height: calc(100% - (var(--desktop-margin) * 2));
     border: 1px solid rgb(171 205 244 / 18%);

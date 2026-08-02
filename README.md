@@ -27,3 +27,18 @@ GitHub Pages publishes at:
 The Pages build keeps the existing Firebase Realtime Database leaderboard at
 `/jumpoverthemoon/scores`. The original Pygbag build script remains available
 under `cat-sword-climb/` but no longer owns the public `docs/` deployment.
+
+## Current production
+
+Build `16.0.2` includes two public modes from one shared HTML game runtime:
+
+- `OVER THE MOON` — the classic endless balloon climb.
+- `COW VS CAT` — the same climb with the jetpack rival, Bow Swipe, Moonshot,
+  Fiddle Drop, counters, and a separate leaderboard.
+
+The cat waits until the cow pops its first balloon. An unprotected Moonshot
+now applies full sideways/downward impact, while a correctly timed downward
+slash clanks the attack and rebounds the cow. Each mode keeps isolated local
+bests, offline queues, Firebase score paths, and interactive top-score
+balloons. See `html-remake/PHASE_16_PUBLIC_COW_VS_CAT.md` for production flow,
+Firebase rules, and verification details.

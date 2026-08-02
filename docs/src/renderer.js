@@ -6,8 +6,13 @@ import {
   GOALS,
   PLAYER,
   REENTRY,
+  RIVAL_BOW_SWIPE,
+  RIVAL_FIDDLE_DROP,
+  RIVAL_FOUNDATION,
+  RIVAL_JETPACK,
+  RIVAL_VERTICAL_BOOST,
   WORLD_FLOOR_Y,
-} from "./game-config.js?v=10.3.1";
+} from "./game-config.js?v=16.0.2";
 
 const COLORS = Object.freeze({
   ink: "#070a18",
@@ -33,6 +38,75 @@ const CAT_OFFSETS = Object.freeze({
   slash: [8, 15],
   fall: [0, 4],
 });
+
+const RIVAL_FRAME_PRESENTATION = Object.freeze({
+  hover: Object.freeze({
+    asset: "rival-cat-jetpack-hover",
+    width: RIVAL_FOUNDATION.renderWidth,
+    nozzle: Object.freeze([-0.195, -0.11]),
+    exhaust: Object.freeze([-0.78, 0.63]),
+    flameScale: 1,
+  }),
+  "bow-windup": Object.freeze({
+    asset: "rival-cat-jetpack-bow-windup",
+    width: RIVAL_FOUNDATION.renderWidth,
+    nozzle: Object.freeze([-0.195, -0.117]),
+    exhaust: Object.freeze([-0.78, 0.63]),
+    flameScale: 1.08,
+  }),
+  "bow-slash": Object.freeze({
+    asset: "rival-cat-jetpack-bow-slash",
+    width: RIVAL_FOUNDATION.renderWidth,
+    nozzle: Object.freeze([-0.148, -0.07]),
+    exhaust: Object.freeze([-0.8, 0.6]),
+    flameScale: 1.28,
+  }),
+  "boost-charge": Object.freeze({
+    asset: "rival-cat-jetpack-boost-charge",
+    width: 190,
+    nozzle: Object.freeze([-0.202, 0.156]),
+    exhaust: Object.freeze([0, 1]),
+    flameScale: 1.45,
+  }),
+  "boost-active": Object.freeze({
+    asset: "rival-cat-jetpack-boost-active",
+    width: 240,
+    nozzle: Object.freeze([-0.135, 0.115]),
+    exhaust: Object.freeze([0, 1]),
+    flameScale: 2.5,
+  }),
+  "fiddle-drop-windup": Object.freeze({
+    asset: "rival-cat-jetpack-fiddle-drop-windup",
+    width: RIVAL_FOUNDATION.renderWidth,
+    nozzle: Object.freeze([-0.142, -0.045]),
+    exhaust: Object.freeze([-0.78, 0.63]),
+    flameScale: 1.18,
+  }),
+  "fiddle-drop-active": Object.freeze({
+    asset: "rival-cat-jetpack-fiddle-drop-active",
+    width: RIVAL_FOUNDATION.renderWidth,
+    nozzle: Object.freeze([-0.12, -0.148]),
+    exhaust: Object.freeze([-0.88, 0.48]),
+    flameScale: 0,
+  }),
+  "fiddle-heavy": Object.freeze({
+    asset: "rival-cat-jetpack-fiddle-heavy",
+    width: RIVAL_FOUNDATION.renderWidth,
+    nozzle: Object.freeze([-0.146, 0.027]),
+    exhaust: Object.freeze([-0.78, 0.63]),
+    flameScale: 0.88,
+  }),
+  knockdown: Object.freeze({
+    asset: "rival-cat-jetpack-knockdown",
+    width: RIVAL_FOUNDATION.renderWidth,
+    nozzle: Object.freeze([-0.17, -0.07]),
+    exhaust: Object.freeze([-0.75, 0.66]),
+    flameScale: 0,
+  }),
+});
+
+const rivalPresentation = (frame) =>
+  RIVAL_FRAME_PRESENTATION[frame] || RIVAL_FRAME_PRESENTATION.hover;
 
 function roundedRect(ctx, x, y, width, height, radius) {
   const r = Math.min(radius, width / 2, height / 2);
@@ -167,6 +241,7 @@ export class ShellRenderer {
     this.#drawBalloons(ctx, game, assets);
     this.#drawPopEffects(ctx, game);
     this.#drawReentryTrail(ctx, game, assets);
+    this.#drawRivalFoundation(ctx, game, assets);
     this.#drawPlayer(ctx, game, assets);
     this.#drawComboFeedback(ctx, game);
     this.#drawHud(ctx, state, layout);
@@ -1642,14 +1717,271 @@ export class ShellRenderer {
     }
 
     if (game.hitPauseSeconds > 0) {
-      ctx.globalAlpha = Math.min(0.65, game.hitPauseSeconds * 10);
+      const rivalCounter = game.rival?.state === "knocked-down";
+      ctx.globalAlpha = rivalCounter
+        ? Math.min(0.32, game.hitPauseSeconds * 6)
+        : Math.min(0.65, game.hitPauseSeconds * 10);
       ctx.strokeStyle = COLORS.gold;
-      ctx.lineWidth = 4;
+      ctx.lineWidth = rivalCounter ? 2.25 : 4;
       ctx.beginPath();
       ctx.arc(x, y, 58, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
+  }
+
+  #drawRivalFoundation(ctx, game, assets) {
+    const rival = game.rival;
+    if (!rival?.present || !rival.visible) {
+      return;
+    }
+    const presentation = rivalPresentation(rival.visualFrame);
+    const sprite = assets.get(presentation.asset);
+    const x = rival.renderX;
+    const y = rival.renderY - game.camera.renderY;
+    this.#drawRivalExhaustTrail(ctx, game);
+    if (!sprite || y < -150 || y > game.camera.viewportHeight + 150) {
+      return;
+    }
+
+    const width = presentation.width;
+    const height = (sprite.height / sprite.width) * width;
+    const speedTilt = Math.max(-0.12, Math.min(0.12, rival.vx / 1900));
+    const airTilt = Math.max(-0.055, Math.min(0.055, rival.vy / 5200));
+    const fiddleDirection = rival.attack.fiddleDirection;
+    const fiddleDiveTilt =
+      Math.sign(fiddleDirection?.x || rival.facing || 1) *
+      Math.atan2(
+        Math.max(0, fiddleDirection?.y || 0),
+        Math.max(0.001, Math.abs(fiddleDirection?.x || 0)),
+      );
+    const tilt = rival.frozen
+      ? 0
+      : rival.attack.state === "fiddle-active"
+        ? Math.max(-0.82, Math.min(0.82, fiddleDiveTilt))
+        : speedTilt + airTilt;
+    ctx.save();
+    ctx.globalAlpha = rival.state === "reentering" ? 0.9 : 0.98;
+    ctx.translate(x, y);
+    ctx.rotate(tilt);
+    ctx.scale(rival.facing < 0 ? -1 : 1, 1);
+    this.#drawRivalJetFlames(
+      ctx,
+      rival,
+      game.runStats.durationSeconds,
+      width,
+      height,
+      presentation,
+    );
+    ctx.drawImage(sprite, -width * 0.5, -height * 0.5, width, height);
+    ctx.restore();
+
+    this.#drawRivalSwipe(ctx, rival, x, y);
+    this.#drawRivalBoostWarning(ctx, rival, x, y);
+    this.#drawRivalFiddleWarning(ctx, rival, x, y);
+
+    if (rival.frozen) {
+      const label = "CAT PAUSED";
+      ctx.save();
+      ctx.font = "950 9px Inter, system-ui, sans-serif";
+      const labelWidth = ctx.measureText(label).width + 16;
+      const labelY = y - height * 0.5 - 11;
+      ctx.fillStyle = "rgb(5 10 27 / 82%)";
+      roundedRect(
+        ctx,
+        x - labelWidth * 0.5,
+        labelY - 9,
+        labelWidth,
+        18,
+        9,
+      );
+      ctx.fill();
+      ctx.fillStyle = COLORS.cyan;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, x, labelY);
+      ctx.restore();
+    }
+  }
+
+  #drawRivalExhaustTrail(ctx, game) {
+    const rival = game.rival;
+    const lifetime = RIVAL_JETPACK.exhaustTrailLifetimeSeconds;
+    for (const point of rival.exhaustTrail || []) {
+      const presentation = rivalPresentation(point.visualFrame);
+      const width = presentation.width;
+      const height = width * (2 / 3);
+      const mirror = point.facing < 0 ? -1 : 1;
+      const directionX = presentation.exhaust[0] * mirror;
+      const directionY = presentation.exhaust[1];
+      const nozzleX =
+        point.x + presentation.nozzle[0] * width * mirror;
+      const nozzleY =
+        point.y - game.camera.renderY + presentation.nozzle[1] * height;
+      const progress = Math.max(0, Math.min(1, point.ageSeconds / lifetime));
+      const alpha = (1 - progress) ** 1.7 * 0.3;
+      const drift = (6 + progress * 34) * point.intensity;
+      const x = nozzleX + directionX * drift;
+      const y = nozzleY + directionY * drift;
+      const rippleLength = 6 + progress * 20 * point.intensity;
+      const rippleWidth = 2.2 + progress * 6.5;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.atan2(directionY, directionX));
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = "rgb(224 247 255 / 72%)";
+      ctx.lineWidth = 1.15;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, rippleWidth, rippleLength, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = alpha * 0.5;
+      ctx.strokeStyle = "rgb(99 211 255 / 60%)";
+      ctx.beginPath();
+      ctx.ellipse(
+        -2 - Math.sin(point.ageSeconds * 42) * 2,
+        0,
+        rippleWidth * 0.58,
+        rippleLength * 0.7,
+        0,
+        -1.2,
+        1.2,
+      );
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  #drawRivalJetFlames(
+    ctx,
+    rival,
+    timeSeconds,
+    width,
+    height,
+    presentation,
+  ) {
+    if (!rival.jetpackActive || rival.frozen) {
+      return;
+    }
+    const activeBoost = presentation.flameScale;
+    const flicker =
+      0.86 + Math.sin(timeSeconds * 34 + rival.x * 0.045) * 0.14;
+    const flameLength = height * 0.26 * activeBoost * flicker;
+    const directionX = presentation.exhaust[0];
+    const directionY = presentation.exhaust[1];
+    const startX = presentation.nozzle[0] * width;
+    const startY = presentation.nozzle[1] * height;
+    ctx.save();
+    const endX = startX + directionX * flameLength;
+    const endY = startY + directionY * flameLength;
+    const halfWidth = height * 0.045 * Math.min(1.35, activeBoost);
+    const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
+    gradient.addColorStop(0, "rgb(239 253 255 / 98%)");
+    gradient.addColorStop(0.24, "rgb(82 210 255 / 94%)");
+    gradient.addColorStop(0.66, "rgb(255 194 66 / 84%)");
+    gradient.addColorStop(1, "rgb(255 98 42 / 0%)");
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.moveTo(
+      startX - directionY * halfWidth,
+      startY + directionX * halfWidth,
+    );
+    ctx.quadraticCurveTo(
+      startX + directionX * flameLength * 0.58,
+      startY + directionY * flameLength * 0.58,
+      endX,
+      endY,
+    );
+    ctx.quadraticCurveTo(
+      startX + directionY * halfWidth,
+      startY - directionX * halfWidth,
+      startX + directionY * halfWidth,
+      startY - directionX * halfWidth,
+    );
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  #drawRivalBoostWarning(ctx, rival, x, y) {
+    if (rival.attack.state !== "boost-telegraph") {
+      return;
+    }
+    const progress =
+      1 -
+      rival.attack.timerSeconds / RIVAL_VERTICAL_BOOST.telegraphSeconds;
+    const top = Math.max(-28, y - 285);
+    ctx.save();
+    ctx.globalAlpha = 0.12 + progress * 0.1;
+    ctx.strokeStyle = COLORS.gold;
+    ctx.lineWidth = 1.25;
+    ctx.setLineDash([4, 8]);
+    ctx.beginPath();
+    ctx.moveTo(x, y - 34);
+    ctx.lineTo(x, top + 18);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  #drawRivalSwipe(ctx, rival, x, y) {
+    if (rival.attack.state !== "telegraph") {
+      return;
+    }
+    const direction = rival.attack.direction || rival.facing || 1;
+    const progress =
+      1 - rival.attack.timerSeconds / RIVAL_BOW_SWIPE.telegraphSeconds;
+    const pulse = Math.sin(progress * Math.PI);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(direction, 1);
+    ctx.lineCap = "round";
+    // The wind-up frame carries the bow over the cat's shoulder; keep the
+    // warning attached to its visible tip instead of floating ahead of the
+    // whole sprite.
+    ctx.translate(-38, -42);
+    ctx.globalAlpha = 0.12 + pulse * 0.22;
+    ctx.strokeStyle = "#ffe7a0";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, 3.5 + pulse * 2.5, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let index = 0; index < 4; index += 1) {
+      const angle = index * (Math.PI / 2) + Math.PI / 4;
+      const inner = 7 + pulse * 2;
+      const outer = inner + 4;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      ctx.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  #drawRivalFiddleWarning(ctx, rival, x, y) {
+    if (rival.attack.state !== "fiddle-telegraph") {
+      return;
+    }
+    const direction = rival.attack.fiddleDirection;
+    const progress =
+      1 - rival.attack.timerSeconds / RIVAL_FIDDLE_DROP.telegraphSeconds;
+    const startDistance = 38;
+    const endDistance = 310;
+    ctx.save();
+    ctx.globalAlpha = 0.1 + progress * 0.1;
+    ctx.strokeStyle = COLORS.gold;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([4, 9]);
+    ctx.beginPath();
+    ctx.moveTo(
+      x + direction.x * startDistance,
+      y + direction.y * startDistance,
+    );
+    ctx.lineTo(
+      x + direction.x * endDistance,
+      y + direction.y * endDistance,
+    );
+    ctx.stroke();
+    ctx.restore();
   }
 
   #scaledSprite(source, targetHeight, flipped, name) {

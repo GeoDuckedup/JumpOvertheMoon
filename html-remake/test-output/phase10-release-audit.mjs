@@ -27,10 +27,10 @@ const repositoryRoot = path.resolve(htmlRoot, "..");
 const releaseRoot = path.join(repositoryRoot, "release", "over-the-moon");
 const sourceDirectory = path.join(htmlRoot, "src");
 
-assert.equal(PHASE, 10);
-assert.equal(BUILD_VERSION, "10.3.1");
+assert.equal(PHASE, 16);
+assert.equal(BUILD_VERSION, "16.0.2");
 assert.equal(RELEASE_CHANNEL, "production");
-assert.equal(ASSET_MANIFEST.length, 25);
+assert.equal(ASSET_MANIFEST.length, 35);
 for (const asset of ASSET_MANIFEST) {
   assert(
     fs.existsSync(fileURLToPath(asset.src)),
